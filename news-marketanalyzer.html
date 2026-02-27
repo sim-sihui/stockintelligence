@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>NewsIntel — Market Impact Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07090c;
+    --surface: #0e1318;
+    --surface2: #151d25;
+    --border: #1a2535;
+    --accent: #00c2ff;
+    --green: #00e87a;
+    --red: #ff4057;
+    --yellow: #ffc840;
+    --purple: #b57bff;
+    --text: #8fa8c0;
+    --text-bright: #ddeeff;
+    --text-dim: #3a5268;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --display: 'Syne', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; -webkit-text-size-adjust: 100%; }
+
+  /* HEADER */
+  header { border-bottom: 1px solid var(--border); padding: 0.9rem 1.2rem; display: flex; align-items: center; justify-content: space-between; background: var(--surface); position: sticky; top: 0; z-index: 100; }
+  .logo { font-family: var(--display); font-weight: 800; font-size: 1rem; color: var(--text-bright); letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; }
+  .logo-pip { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: pip 2s ease-in-out infinite; }
+  @keyframes pip { 0%,100%{opacity:1;box-shadow:0 0 8px var(--accent)}50%{opacity:.4;box-shadow:0 0 18px var(--accent)} }
+  .header-tag { font-family: var(--mono); font-size: 0.6rem; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  /* LAYOUT — desktop side-by-side, mobile stacked */
+  .app { display: grid; grid-template-columns: 1fr 400px; gap: 1.5rem; max-width: 1200px; margin: 0 auto; padding: 1.5rem; align-items: start; }
+  @media (max-width: 800px) { .app { grid-template-columns: 1fr; padding: 1rem; gap: 1rem; } }
+
+  /* SECTION LABEL */
+  .section-label { font-family: var(--mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-dim); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 8px; }
+  .section-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  /* SOURCE CHIPS */
+  .source-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .source-chip { font-family: var(--mono); font-size: 0.65rem; padding: 6px 13px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--text-dim); cursor: pointer; transition: all 0.15s; user-select: none; -webkit-tap-highlight-color: transparent; }
+  .source-chip:active { transform: scale(0.95); }
+  .source-chip.active { background: rgba(0,194,255,0.12); border-color: var(--accent); color: var(--accent); }
+
+  /* INPUT METHOD TOGGLE */
+  .input-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem; }
+  .method-btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0.7rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-dim); font-family: var(--mono); font-size: 0.68rem; cursor: pointer; transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
+  .method-btn:active { transform: scale(0.97); }
+  .method-btn.m-active { border-color: var(--accent); color: var(--accent); background: rgba(0,194,255,0.07); }
+  .method-btn.m-upload.m-active { border-color: var(--purple); color: var(--purple); background: rgba(181,123,255,0.07); }
+
+  /* URL ROW */
+  .url-section { margin-bottom: 0.75rem; }
+  .url-row { display: flex; gap: 0.5rem; }
+  .url-input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 0.7rem 0.9rem; font-family: var(--mono); font-size: 0.7rem; color: var(--text-bright); outline: none; transition: border-color 0.2s; min-width: 0; }
+  .url-input::placeholder { color: var(--text-dim); }
+  .url-input:focus { border-color: var(--accent); }
+  .url-go { padding: 0 1rem; border-radius: 7px; border: 1px solid rgba(0,194,255,0.3); background: rgba(0,194,255,0.08); color: var(--accent); font-family: var(--mono); font-size: 0.68rem; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+  .url-go:hover { background: rgba(0,194,255,0.18); }
+
+  /* DROP ZONE */
+  .drop-section { margin-bottom: 0.75rem; display: none; }
+  .drop-section.vis { display: block; }
+  .drop-zone { border: 1.5px dashed var(--border); border-radius: 10px; padding: 2rem 1rem; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--surface); }
+  .drop-zone:hover,.drop-zone.over { border-color: var(--purple); background: rgba(181,123,255,0.05); }
+  .drop-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+  .drop-title { font-family: var(--display); font-weight: 700; font-size: 0.9rem; color: var(--text); margin-bottom: 0.25rem; }
+  .drop-sub { font-family: var(--mono); font-size: 0.6rem; color: var(--text-dim); letter-spacing: 0.05em; margin-bottom: 0.9rem; }
+  .drop-browse { font-family: var(--mono); font-size: 0.68rem; padding: 7px 18px; border-radius: 6px; border: 1px solid rgba(181,123,255,0.35); background: rgba(181,123,255,0.1); color: var(--purple); cursor: pointer; transition: all 0.2s; }
+  .drop-browse:hover { background: rgba(181,123,255,0.2); }
+
+  /* FILE PILL */
+  .file-pill { display: none; align-items: center; gap: 8px; background: rgba(0,232,122,0.08); border: 1px solid rgba(0,232,122,0.25); border-radius: 7px; padding: 0.6rem 0.9rem; margin-bottom: 0.75rem; font-family: var(--mono); font-size: 0.68rem; }
+  .file-pill.vis { display: flex; }
+  .pill-icon { color: var(--green); }
+  .pill-name { color: var(--text-bright); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pill-size { color: var(--text-dim); flex-shrink: 0; }
+  .pill-clear { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.8rem; padding: 0 2px; }
+  .pill-clear:hover { color: var(--red); }
+
+  /* TEXTAREA */
+  .news-textarea { width: 100%; min-height: 180px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; font-family: var(--sans); font-size: 0.88rem; line-height: 1.65; color: var(--text-bright); resize: vertical; outline: none; transition: border-color 0.2s; margin-bottom: 0.5rem; -webkit-appearance: none; }
+  .news-textarea::placeholder { color: var(--text-dim); font-style: italic; font-size: 0.82rem; }
+  .news-textarea:focus { border-color: rgba(0,194,255,0.4); }
+  .char-counter { font-family: var(--mono); font-size: 0.6rem; color: var(--text-dim); text-align: right; margin-bottom: 0.75rem; }
+  .char-counter.ready { color: var(--green); }
+
+  /* META */
+  .meta-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 1rem; }
+  .meta-field label { display: block; font-family: var(--mono); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 5px; }
+  .meta-field select, .meta-field input[type="date"] { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 0.6rem 0.8rem; font-family: var(--mono); font-size: 0.7rem; color: var(--text-bright); outline: none; -webkit-appearance: none; appearance: none; transition: border-color 0.2s; }
+  .meta-field select:focus, .meta-field input:focus { border-color: var(--accent); }
+
+  /* ANALYSE BUTTON — sticky on mobile */
+  .analyse-wrap { position: sticky; bottom: 0; background: linear-gradient(to top, var(--bg) 75%, transparent); padding: 1rem 0 0.75rem; z-index: 50; }
+  @media (min-width: 801px) { .analyse-wrap { position: static; background: none; padding: 0; } }
+  .analyse-btn { width: 100%; padding: 1.1rem; border-radius: 10px; background: linear-gradient(135deg,#004d66,#002233); border: 1px solid rgba(0,194,255,0.35); color: var(--text-bright); font-family: var(--display); font-weight: 700; font-size: 1rem; letter-spacing: 0.04em; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 20px rgba(0,194,255,0.12); -webkit-tap-highlight-color: transparent; }
+  .analyse-btn:hover:not(:disabled) { background: linear-gradient(135deg,#006080,#003344); box-shadow: 0 6px 28px rgba(0,194,255,0.22); transform: translateY(-1px); }
+  .analyse-btn:active:not(:disabled) { transform: translateY(0); }
+  .analyse-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* SAMPLES */
+  .samples-section { margin-top: 1.5rem; }
+  .sample-list { display: flex; flex-direction: column; gap: 0.4rem; }
+  .sample-item { display: flex; align-items: center; gap: 10px; padding: 0.7rem 0.9rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
+  .sample-item:active { transform: scale(0.98); }
+  .sample-item:hover { border-color: rgba(0,194,255,0.25); background: var(--surface2); }
+  .sample-badge { font-family: var(--mono); font-size: 0.58rem; padding: 2px 7px; border-radius: 3px; flex-shrink: 0; font-weight: 600; }
+  .sample-title { font-size: 0.78rem; color: var(--text); line-height: 1.35; }
+
+  /* ANALYSIS PANEL */
+  @media (min-width: 801px) { .analysis-panel { position: sticky; top: 72px; } }
+
+  /* Empty */
+  .empty-state { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 3rem 2rem; text-align: center; }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.4; }
+  .empty-title { font-family: var(--display); font-weight: 700; color: var(--text); font-size: 0.95rem; margin-bottom: 0.5rem; }
+  .empty-sub { font-size: 0.78rem; color: var(--text-dim); line-height: 1.6; }
+
+  /* Loading */
+  .loading-state { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2.5rem 1.5rem; display: none; flex-direction: column; align-items: center; gap: 1rem; }
+  .spinner { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--accent); animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-label { font-family: var(--mono); font-size: 0.68rem; color: var(--text-dim); }
+  .loading-steps { width: 100%; }
+  .loading-step { font-family: var(--mono); font-size: 0.65rem; color: var(--text-dim); padding: 0.3rem 0; display: flex; align-items: center; gap: 8px; transition: color 0.3s; }
+  .loading-step.done { color: var(--green); }
+  .loading-step.active { color: var(--accent); }
+
+  /* Result card */
+  .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: none; }
+
+  /* Verdict */
+  .verdict-banner { padding: 1.4rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+  .verdict-label { font-family: var(--mono); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 0.3rem; }
+  .verdict-word { font-family: var(--display); font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+  .verdict-sub { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.3rem; }
+  .verdict-arrow { font-size: 3rem; line-height: 1; filter: drop-shadow(0 0 14px currentColor); }
+  .c-bear { color: var(--red); }
+  .c-bull { color: var(--green); }
+  .c-neut { color: var(--yellow); }
+  .banner-bearish { background: linear-gradient(135deg,rgba(255,64,87,0.1),transparent); }
+  .banner-bullish { background: linear-gradient(135deg,rgba(0,232,122,0.08),transparent); }
+  .banner-neutral { background: linear-gradient(135deg,rgba(255,200,64,0.08),transparent); }
+
+  /* Blocks */
+  .block { padding: 1rem 1.4rem; border-bottom: 1px solid var(--border); }
+  .block:last-child { border-bottom: none; }
+  .block-label { font-family: var(--mono); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; }
+
+  /* Confidence */
+  .conf-bar-wrap { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .conf-bar-fill { height: 100%; border-radius: 3px; transition: width 1s cubic-bezier(0.4,0,0.2,1); }
+  .fill-bearish { background: var(--red); }
+  .fill-bullish { background: var(--green); }
+  .fill-neutral { background: var(--yellow); }
+
+  /* Tickers */
+  .ticker-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .ticker-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; padding: 0.5rem 0.85rem; display: flex; align-items: center; gap: 8px; }
+  .ticker-sym { font-family: var(--mono); font-size: 0.78rem; font-weight: 600; color: var(--text-bright); }
+  .ticker-move { font-family: var(--mono); font-size: 0.68rem; font-weight: 600; }
+  .move-up { color: var(--green); }
+  .move-down { color: var(--red); }
+  .move-flat { color: var(--text-dim); }
+
+  /* Reasoning */
+  .reasoning-text { font-size: 0.82rem; line-height: 1.7; color: var(--text); }
+  .reasoning-text strong { color: var(--text-bright); font-weight: 500; }
+
+  /* Sectors */
+  .sector-row { display: grid; grid-template-columns: 90px 1fr 38px; gap: 8px; align-items: center; margin-bottom: 0.5rem; }
+  .sector-name { font-family: var(--mono); font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+  .sector-bar-wrap { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; position: relative; }
+  .sector-center { position: absolute; left: 50%; top: 0; width: 1px; height: 100%; background: rgba(255,255,255,0.1); }
+  .sector-fill { height: 100%; border-radius: 3px; position: absolute; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+  .s-neg { right: 50%; background: var(--red); }
+  .s-pos { left: 50%; background: var(--green); }
+  .sector-val { font-family: var(--mono); font-size: 0.64rem; font-weight: 600; text-align: right; }
+
+  /* Tags */
+  .tag-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .tag { font-family: var(--mono); font-size: 0.6rem; padding: 3px 9px; border-radius: 3px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+  .tag.primary { background: rgba(0,194,255,0.08); border-color: rgba(0,194,255,0.2); color: var(--accent); }
+
+  /* ── COUNTRIES ── */
+  .country-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .country-card {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 7px; padding: 0.45rem 0.8rem;
+  }
+  .country-flag { font-size: 1.1rem; line-height: 1; }
+  .country-info {}
+  .country-name { font-size: 0.75rem; font-weight: 500; color: var(--text-bright); line-height: 1.2; }
+  .country-role { font-family: var(--mono); font-size: 0.58rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* ── INVEST NOW ── */
+  .invest-verdict {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 1rem; border-radius: 8px; margin-bottom: 0.85rem;
+    border: 1px solid var(--border);
+  }
+  .invest-icon { font-size: 1.8rem; line-height: 1; flex-shrink: 0; }
+  .invest-recommendation {
+    font-family: var(--display); font-size: 1.05rem; font-weight: 800;
+    letter-spacing: -0.01em; line-height: 1.1; margin-bottom: 0.2rem;
+  }
+  .invest-rationale { font-size: 0.76rem; line-height: 1.5; color: var(--text); }
+  .invest-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.7rem; }
+  .invest-metric {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.55rem 0.75rem;
+  }
+  .invest-metric-label { font-family: var(--mono); font-size: 0.56rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-dim); margin-bottom: 3px; }
+  .invest-metric-val { font-family: var(--mono); font-size: 0.8rem; font-weight: 600; }
+
+  .verdict-buy    { background: rgba(0,232,122,0.07);  border-color: rgba(0,232,122,0.2); }
+  .verdict-wait   { background: rgba(255,200,64,0.07); border-color: rgba(255,200,64,0.2); }
+  .verdict-avoid  { background: rgba(255,64,87,0.07);  border-color: rgba(255,64,87,0.2); }
+  .verdict-short  { background: rgba(181,123,255,0.07);border-color: rgba(181,123,255,0.2); }
+
+  /* ── POSITION SIZING ── */
+  .position-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 0.7rem;
+  }
+  .portfolio-pct {
+    font-family: var(--display); font-size: 2rem; font-weight: 800;
+    line-height: 1; letter-spacing: -0.03em;
+  }
+  .position-risk-label {
+    font-family: var(--mono); font-size: 0.62rem; padding: 3px 8px;
+    border-radius: 3px; text-transform: uppercase; letter-spacing: 0.07em;
+  }
+  .risk-low    { background: rgba(0,232,122,0.1);  color: var(--green);  border: 1px solid rgba(0,232,122,0.25); }
+  .risk-med    { background: rgba(255,200,64,0.1); color: var(--yellow); border: 1px solid rgba(255,200,64,0.25); }
+  .risk-high   { background: rgba(255,64,87,0.1);  color: var(--red);    border: 1px solid rgba(255,64,87,0.25); }
+
+  .sizing-note { font-size: 0.76rem; line-height: 1.6; color: var(--text); margin-bottom: 0.75rem; }
+
+  .allocation-rows { display: flex; flex-direction: column; gap: 0.45rem; }
+  .allocation-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+  .alloc-label { font-size: 0.76rem; color: var(--text); }
+  .alloc-pct { font-family: var(--mono); font-size: 0.72rem; font-weight: 600; }
+
+  .disclaimer {
+    font-family: var(--mono); font-size: 0.58rem; color: var(--text-dim);
+    border-top: 1px solid var(--border); padding-top: 0.75rem; margin-top: 0.75rem;
+    line-height: 1.6; letter-spacing: 0.02em;
+  }
+
+  /* Summary block */
+  .summary-headline {
+    font-family: var(--display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-bright);
+    line-height: 1.4;
+    margin-bottom: 0.75rem;
+  }
+  .summary-body {
+    font-size: 0.82rem;
+    line-height: 1.72;
+    color: var(--text);
+    margin-bottom: 0.9rem;
+  }
+  .summary-keypoints {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .keypoint {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--text);
+  }
+  .keypoint-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><div class="logo-pip"></div>NewsIntel</div>
+  <div class="header-tag">Market Analyzer</div>
+</header>
+
+<div class="app">
+
+  <!-- ════════════════════ LEFT: INPUT ════════════════════ -->
+  <div class="input-panel">
+
+    <div class="section-label">News Source</div>
+    <div class="source-row">
+      <div class="source-chip active" data-src="bbc">BBC</div>
+      <div class="source-chip" data-src="cna">CNA</div>
+      <div class="source-chip" data-src="reuters">Reuters</div>
+      <div class="source-chip" data-src="cnbc">CNBC</div>
+      <div class="source-chip" data-src="ft">FT</div>
+      <div class="source-chip" data-src="other">Other</div>
+    </div>
+
+    <div class="section-label" style="margin-top:0.25rem">Article Content</div>
+
+    <!-- Method toggle -->
+    <div class="input-methods">
+      <button class="method-btn m-active" id="btn-paste" onclick="switchMethod('paste')">✏️ Paste Text</button>
+      <button class="method-btn m-upload" id="btn-upload" onclick="switchMethod('upload')">📁 Upload File</button>
+    </div>
+
+    <!-- URL row (shown in paste mode) -->
+    <div class="url-section" id="url-section">
+      <div class="url-row">
+        <input class="url-input" id="url-input" placeholder="Or paste a URL to fetch..." />
+        <button class="url-go" onclick="loadUrl()">Fetch</button>
+      </div>
+    </div>
+
+    <!-- Drop zone (shown in upload mode) -->
+    <div class="drop-section" id="drop-section">
+      <div class="drop-zone" id="drop-zone">
+        <div class="drop-icon">📄</div>
+        <div class="drop-title">Drop your file here</div>
+        <div class="drop-sub">Supports .txt · .pdf · .docx · .md · .rtf</div>
+        <button class="drop-browse" onclick="document.getElementById('file-input').click()">Browse Files</button>
+      </div>
+    </div>
+
+    <!-- File loaded indicator -->
+    <div class="file-pill" id="file-pill">
+      <span class="pill-icon">✓</span>
+      <span class="pill-name" id="pill-name">—</span>
+      <span class="pill-size" id="pill-size"></span>
+      <button class="pill-clear" onclick="clearFile()">✕</button>
+    </div>
+
+    <input type="file" id="file-input" accept=".txt,.pdf,.docx,.doc,.rtf,.md" style="display:none" onchange="handleFile(event)" />
+
+    <!-- Textarea -->
+    <textarea class="news-textarea" id="news-input"
+      placeholder="Paste your article here...&#10;&#10;The more text you include, the better the analysis."
+      oninput="onType()"></textarea>
+    <div class="char-counter" id="char-count">0 characters — paste or upload an article to begin</div>
+
+    <!-- Meta -->
+    <div class="meta-row">
+      <div class="meta-field">
+        <label>Published Date</label>
+        <input type="date" id="pub-date" />
+      </div>
+      <div class="meta-field">
+        <label>Category</label>
+        <select id="category">
+          <option value="auto">Auto-detect</option>
+          <option value="macro">Macroeconomics</option>
+          <option value="earnings">Earnings</option>
+          <option value="geopolitical">Geopolitical</option>
+          <option value="sector">Sector News</option>
+          <option value="commodities">Commodities</option>
+          <option value="crypto">Crypto</option>
+          <option value="regulation">Regulation</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- BIG STICKY BUTTON -->
+    <div class="analyse-wrap">
+      <button class="analyse-btn" id="analyse-btn" onclick="runAnalysis()">
+        ⚡ Analyse Market Impact
+      </button>
+    </div>
+
+    <!-- Samples -->
+    <div class="samples-section">
+      <div class="section-label" style="margin-top:1.5rem">Try a sample article</div>
+      <div class="sample-list" id="sample-list"></div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════ RIGHT: RESULT ════════════════════ -->
+  <div class="analysis-panel">
+
+    <div class="section-label">Market Analysis</div>
+
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">📊</div>
+      <div class="empty-title">Awaiting article</div>
+      <div class="empty-sub">Paste text, upload a file, or try a sample —<br>then tap <strong style="color:var(--accent)">Analyse Market Impact</strong></div>
+    </div>
+
+    <div class="loading-state" id="loading-state">
+      <div class="spinner"></div>
+      <div class="loading-label">Analysing article...</div>
+      <div class="loading-steps" id="loading-steps"></div>
+    </div>
+
+    <div class="result-card" id="result-card">
+
+      <!-- ARTICLE SUMMARY — first thing the user sees -->
+      <div class="block" id="summary-block">
+        <div class="block-label">Article Summary</div>
+        <div class="summary-headline" id="summary-headline">—</div>
+        <div class="summary-body" id="summary-body">—</div>
+        <div class="summary-keypoints" id="summary-keypoints"></div>
+      </div>
+
+      <div class="verdict-banner" id="verdict-banner">
+        <div>
+          <div class="verdict-label">Market Verdict</div>
+          <div class="verdict-word" id="verdict-word">—</div>
+          <div class="verdict-sub" id="verdict-sub">—</div>
+        </div>
+        <div class="verdict-arrow" id="verdict-arrow">—</div>
+      </div>
+
+      <div class="block">
+        <div class="block-label"><span>Confidence</span><span id="conf-pct">—</span></div>
+        <div class="conf-bar-wrap"><div class="conf-bar-fill" id="conf-bar" style="width:0%"></div></div>
+      </div>
+
+      <div class="block">
+        <div class="block-label">Affected Securities</div>
+        <div class="ticker-grid" id="ticker-grid"></div>
+      </div>
+
+      <div class="block">
+        <div class="block-label">Why This Matters</div>
+        <div class="reasoning-text" id="reasoning"></div>
+      </div>
+
+      <div class="block">
+        <div class="block-label">Sector Impact</div>
+        <div id="sectors"></div>
+      </div>
+
+      <div class="block">
+        <div class="block-label">Categories</div>
+        <div class="tag-row" id="tags"></div>
+      </div>
+
+      <!-- COUNTRIES INVOLVED -->
+      <div class="block">
+        <div class="block-label">Countries Involved</div>
+        <div class="country-grid" id="country-grid"></div>
+      </div>
+
+      <!-- INVEST NOW? -->
+      <div class="block">
+        <div class="block-label">Should I Invest Now?</div>
+        <div class="invest-verdict" id="invest-verdict">
+          <div class="invest-icon" id="invest-icon">—</div>
+          <div>
+            <div class="invest-recommendation" id="invest-rec">—</div>
+            <div class="invest-rationale" id="invest-rationale">—</div>
+          </div>
+        </div>
+        <div class="invest-grid" id="invest-grid"></div>
+      </div>
+
+      <!-- POSITION SIZING -->
+      <div class="block">
+        <div class="block-label">How Much to Invest</div>
+        <div class="position-header">
+          <div>
+            <div style="font-family:var(--mono);font-size:0.58rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:3px">Suggested Portfolio Allocation</div>
+            <div class="portfolio-pct" id="portfolio-pct">—</div>
+          </div>
+          <span class="position-risk-label" id="risk-label">—</span>
+        </div>
+        <div class="sizing-note" id="sizing-note">—</div>
+        <div class="allocation-rows" id="allocation-rows"></div>
+        <div class="disclaimer">⚠ This is not financial advice. All figures are illustrative and based on news signal strength only. Always consult a licensed financial advisor before making investment decisions.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── INIT ──────────────────────────────────────────────────────────────────────
+document.getElementById("pub-date").value = new Date().toISOString().split("T")[0];
+
+// Source chips
+document.querySelectorAll(".source-chip").forEach(c =>
+  c.addEventListener("click", () => {
+    document.querySelectorAll(".source-chip").forEach(x => x.classList.remove("active"));
+    c.classList.add("active");
+  })
+);
+
+// ── INPUT METHOD TOGGLE ───────────────────────────────────────────────────────
+function switchMethod(m) {
+  const isPaste = m === "paste";
+  document.getElementById("btn-paste").classList.toggle("m-active", isPaste);
+  document.getElementById("btn-upload").classList.toggle("m-active", !isPaste);
+  document.getElementById("url-section").style.display  = isPaste  ? "block" : "none";
+  document.getElementById("drop-section").classList.toggle("vis", !isPaste);
+  if (isPaste) document.getElementById("news-input").focus();
+}
+
+// ── CHAR COUNTER ──────────────────────────────────────────────────────────────
+function onType() {
+  const n = document.getElementById("news-input").value.trim().length;
+  const el = document.getElementById("char-count");
+  el.textContent = n === 0
+    ? "0 characters — paste or upload an article to begin"
+    : `${n.toLocaleString()} characters · ready to analyse`;
+  el.className = "char-counter" + (n > 50 ? " ready" : "");
+}
+
+// ── FILE UPLOAD ───────────────────────────────────────────────────────────────
+const dz = document.getElementById("drop-zone");
+dz.addEventListener("dragover",  e => { e.preventDefault(); dz.classList.add("over"); });
+dz.addEventListener("dragleave", () => dz.classList.remove("over"));
+dz.addEventListener("drop", e => {
+  e.preventDefault(); dz.classList.remove("over");
+  if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+});
+dz.addEventListener("click", () => document.getElementById("file-input").click());
+
+function handleFile(e) {
+  if (e.target.files[0]) processFile(e.target.files[0]);
+  e.target.value = "";
+}
+
+function processFile(file) {
+  const ext = file.name.split(".").pop().toLowerCase();
+  if (!["txt","md","pdf","docx","doc","rtf"].includes(ext)) {
+    alert("Unsupported file. Use .txt, .pdf, .docx, .md, or .rtf"); return;
+  }
+  if (file.size > 10e6) { alert("File too large. Max 10MB."); return; }
+
+  document.getElementById("pill-name").textContent = file.name;
+  document.getElementById("pill-size").textContent = (file.size/1e6).toFixed(2) + " MB";
+  document.getElementById("file-pill").classList.add("vis");
+  dz.style.opacity = "0.4";
+
+  if (ext === "pdf")       readPDF(file);
+  else if (ext === "docx") readDOCX(file);
+  else {
+    const r = new FileReader();
+    r.onload = ev => {
+      let t = ev.target.result;
+      if (ext === "rtf") t = t.replace(/\{[^{}]*\}/g,"").replace(/\\[a-z]+[-\d]* ?/g,"").replace(/[{}\\]/g,"").replace(/\s+/g," ").trim();
+      document.getElementById("news-input").value = t;
+      onType(); autoDetectSource(file.name, t);
+    };
+    r.readAsText(file);
+  }
+}
+
+function readPDF(file) {
+  if (!window.pdfjsLib) {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    s.onload = () => { pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; extractPDF(file); };
+    document.head.appendChild(s);
+  } else extractPDF(file);
+}
+
+async function extractPDF(file) {
+  try {
+    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    let t = "";
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const pg = await pdf.getPage(i);
+      t += (await pg.getTextContent()).items.map(x=>x.str).join(" ") + "\n";
+    }
+    document.getElementById("news-input").value = t.trim();
+    onType(); autoDetectSource(file.name, t);
+  } catch { alert("Could not read PDF. Copy the text manually."); }
+}
+
+function readDOCX(file) {
+  if (!window.mammoth) {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js";
+    s.onload = () => extractDOCX(file);
+    document.head.appendChild(s);
+  } else extractDOCX(file);
+}
+
+async function extractDOCX(file) {
+  try {
+    const r = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+    document.getElementById("news-input").value = r.value.trim();
+    onType(); autoDetectSource(file.name, r.value);
+  } catch { alert("Could not read DOCX. Try saving as .txt."); }
+}
+
+function clearFile() {
+  document.getElementById("file-pill").classList.remove("vis");
+  dz.style.opacity = "1";
+  document.getElementById("news-input").value = "";
+  onType();
+}
+
+function autoDetectSource(fn, text) {
+  const f = fn.toLowerCase(), t = text.toLowerCase().slice(0,2000);
+  const map = [["bbc",["bbc"]],["cna",["channelnewsasia","cna"]],["reuters",["reuters"]],["cnbc",["cnbc"]],["ft",["financial times","ft.com"]]];
+  for (const [chip, keys] of map) {
+    if (keys.some(k => f.includes(k)||t.includes(k))) {
+      document.querySelectorAll(".source-chip").forEach(c => c.classList.toggle("active", c.dataset.src===chip));
+      return;
+    }
+  }
+}
+
+function loadUrl() {
+  const u = document.getElementById("url-input").value.trim();
+  if (!u) return;
+  document.getElementById("news-input").value = `[URL: ${u}]\n\nIn production the backend scraper auto-fetches the article. For now, paste the article text here directly.`;
+  onType();
+}
+
+// ── SAMPLE ARTICLES ───────────────────────────────────────────────────────────
+const SAMPLES = [
+  { source:"BBC",     src:"bbc",     color:"#ff6b35", cat:"macro",       title:"Fed raises rates 50bps — largest hike in 22 years", text:`The Federal Reserve raised its benchmark interest rate by half a percentage point, its largest single increase in more than two decades, as policymakers ramp up their fight against inflation running at a 40-year high. The move pushes the federal funds rate to a target range of 0.75% to 1%. Fed Chair Jerome Powell said the committee is prepared to continue raising rates at 50 basis point increments at the next couple of meetings. "Inflation is much too high and we understand the hardship it is causing," Powell said. The central bank also said it would start reducing its $9 trillion balance sheet starting June 1 at a pace of $47.5 billion per month, accelerating over three months to $95 billion per month. Markets sold off sharply, with the S&P 500 dropping 2.1% and tech stocks hit hardest.` },
+  { source:"CNA",     src:"cna",     color:"#00d4ff", cat:"macro",       title:"China PMI contracts for third straight month",         text:`China's official manufacturing Purchasing Managers' Index fell to 49.2 in October, below the 50-point threshold separating expansion from contraction for the third consecutive month. The reading missed analysts' expectations of 49.8. The contraction was broad-based, with output, new orders, and export orders all declining. The data signals continued weakness in China's economy as it struggles with a deepening property sector crisis, weak consumer confidence and sluggish external demand. The People's Bank of China cut its benchmark lending rates last month but analysts say more stimulus may be needed. Shares on the Shanghai Composite fell 1.2% following the release.` },
+  { source:"Reuters", src:"reuters", color:"#a855f7", cat:"commodities", title:"OPEC+ agrees surprise 1 million bpd output cut",         text:`OPEC+ announced a surprise additional oil output cut of around one million barrels per day, a move Saudi Arabia said was precautionary to support market stability. The cut adds to a 2 million bpd reduction agreed in October, meaning the group is now cutting output by 3.66 million bpd. Brent crude surged more than 6% to above $86 a barrel. The move is likely to keep inflation elevated and could complicate the Federal Reserve's efforts. Energy stocks rallied globally, while airline and transportation sectors fell sharply on the news.` },
+  { source:"CNBC",    src:"cnbc",    color:"#ffc840", cat:"earnings",    title:"Nvidia blowout earnings — raises guidance above estimates", text:`Nvidia reported fiscal second-quarter earnings that smashed Wall Street estimates, driven by explosive demand for its AI chips. The company reported revenue of $13.51 billion, up 88% year-over-year and above consensus estimates of $11.22 billion. Data center revenue hit $10.32 billion, more than tripling from a year ago. For the current quarter Nvidia guided for revenue of $16 billion versus analysts' estimates of $12.61 billion. Gross margins expanded to 71.2%. CEO Jensen Huang said the transition to accelerated computing and generative AI has reached the tipping point. Shares surged 8% in after-hours trading.` },
+  { source:"FT",      src:"ft",      color:"#00e87a", cat:"sector",      title:"Silicon Valley Bank collapses — largest US bank failure since 2008", text:`Silicon Valley Bank collapsed after a stunning 48 hours in which a bank run and a capital crisis led to the second-largest failure of a financial institution in US history. California regulators shuttered the bank and handed it to the FDIC. The collapse came after SVB announced it sold $21 billion of securities at a $1.8 billion loss and was seeking $2.25 billion in fresh capital, triggering a panic among VC firms who rushed to pull deposits. US bank stocks plunged sharply with the KBW Bank Index dropping 8%. Treasury yields fell as investors fled to safe havens.` },
+];
+
+const sl = document.getElementById("sample-list");
+SAMPLES.forEach(s => {
+  const d = document.createElement("div");
+  d.className = "sample-item";
+  d.innerHTML = `<span class="sample-badge" style="background:${s.color}18;color:${s.color};border:1px solid ${s.color}33">${s.source}</span><span class="sample-title">${s.title}</span>`;
+  d.addEventListener("click", () => {
+    document.getElementById("news-input").value = s.text;
+    document.getElementById("category").value = s.cat;
+    document.querySelectorAll(".source-chip").forEach(c => c.classList.toggle("active", c.dataset.src===s.src));
+    onType(); switchMethod("paste");
+    setTimeout(runAnalysis, 80);
+    if (window.innerWidth <= 800) document.querySelector(".analysis-panel").scrollIntoView({ behavior:"smooth" });
+  });
+  sl.appendChild(d);
+});
+
+// ── ANALYSIS ENGINE ───────────────────────────────────────────────────────────
+function analyseText(text, category) {
+  const t = text.toLowerCase();
+  const bears = ["rate hike","rate increase","inflation","contraction","pmi below","slowdown","recession","job losses","layoffs","collapse","bank run","deficit","missed estimates","below expectations","cut guidance","output cut","sanction","tariff","trade war","failed","crisis","selloff","plunged","tumbled","declined","fell","concern","fear","warn","risk","attack","conflict","military"];
+  const bulls = ["beat","blowout","surge","record","raised guidance","above estimates","growth","expansion","cut rates","stimulus","recovery","rally","upgrade","strong demand","ai demand","acceleration","profit","buyback","dividend","jumped","climbed","gained","outperform"];
+  let bear = 0, bull = 0;
+  bears.forEach(w => { if (t.includes(w)) bear++; });
+  bulls.forEach(w => { if (t.includes(w)) bull++; });
+  const tot = bear + bull;
+  let dir, conf;
+  if (tot === 0) { dir="neutral"; conf=52; }
+  else if (bear > bull*1.2) { dir="bearish"; conf=Math.min(94,55+Math.round((bear/tot)*42)); }
+  else if (bull > bear*1.2) { dir="bullish"; conf=Math.min(94,55+Math.round((bull/tot)*42)); }
+  else { dir="neutral"; conf=50+Math.abs(bear-bull)*3; }
+
+  const tickerSets = [
+    { k:["federal reserve","rate hike","rate cut","fed ","powell","interest rate"], t: dir==="bearish"?[{s:"SPY",d:"-1.8%"},{s:"TLT",d:"-3.2%"},{s:"GLD",d:"+0.8%"},{s:"VIX",d:"+18%"}]:[{s:"SPY",d:"+1.1%"},{s:"TLT",d:"+2.4%"},{s:"GLD",d:"-0.5%"}] },
+    { k:["china","chinese","pmi","shanghai","yuan"],          t:[{s:"FXI",d:"-2.1%"},{s:"EEM",d:"-1.4%"},{s:"BABA",d:"-2.8%"},{s:"KWEB",d:"-3.1%"}] },
+    { k:["oil","opec","crude","petroleum","barrel"],          t:[{s:"XOM",d:"+3.2%"},{s:"CVX",d:"+2.8%"},{s:"USO",d:"+4.1%"},{s:"AAL",d:"-2.3%"},{s:"UAL",d:"-1.9%"}] },
+    { k:["nvidia","nvda","gpu","ai chip","data center"],      t:[{s:"NVDA",d:"+8.1%"},{s:"AMD",d:"+3.2%"},{s:"SMCI",d:"+4.5%"},{s:"TSM",d:"+2.1%"}] },
+    { k:["bank","svb","silicon valley bank"],                 t:[{s:"KRE",d:"-6.4%"},{s:"JPM",d:"-3.1%"},{s:"GS",d:"-2.8%"},{s:"TLT",d:"+1.8%"}] },
+    { k:["inflation","cpi","consumer price"],                 t:[{s:"SPY",d:"-1.2%"},{s:"TLT",d:"-2.4%"},{s:"TIPS",d:"+0.9%"},{s:"GLD",d:"+0.7%"}] },
+    { k:["apple","iphone"],                                   t:[{s:"AAPL",d:dir==="bullish"?"+5.2%":"-3.1%"},{s:"QQQ",d:dir==="bullish"?"+1.3%":"-0.8%"}] },
+    { k:["iran","middle east","conflict","military","attack","trump","tariff"], t:[{s:"XOM",d:"+2.8%"},{s:"LMT",d:"+3.1%"},{s:"GLD",d:"+1.5%"},{s:"SPY",d:"-1.4%"},{s:"USO",d:"+4.2%"}] },
+    { k:["semiconductor","chip","tsmc"],                      t:[{s:"SOXX",d:"+2.1%"},{s:"TSM",d:"+3.4%"},{s:"QCOM",d:"+1.8%"}] },
+    { k:["crypto","bitcoin","ethereum","btc"],                t:[{s:"BTC",d:dir==="bullish"?"+6.2%":"-8.1%"},{s:"COIN",d:dir==="bullish"?"+9%":"-12%"}] },
+  ];
+
+  let tickers = [];
+  for (const { k, t: t2 } of tickerSets) {
+    if (k.some(kw => t.includes(kw))) { tickers=[...tickers,...t2]; if(tickers.length>=6) break; }
+  }
+  if (!tickers.length) tickers = dir==="bearish"?[{s:"SPY",d:"-0.9%"},{s:"VIX",d:"+12%"},{s:"TLT",d:"+0.6%"}]:[{s:"SPY",d:"+0.8%"},{s:"QQQ",d:"+1.1%"},{s:"VIX",d:"-8%"}];
+
+  const b = dir==="bearish"?-1:1, rnd=(lo,hi)=>Math.round(lo+Math.random()*(hi-lo));
+  const sectors = [
+    { name:"Financials", score: t.includes("bank")||t.includes("rate")?b*rnd(18,32):b*rnd(3,10) },
+    { name:"Energy",     score: t.includes("oil")||t.includes("opec")||t.includes("iran")?b*rnd(22,35):b*rnd(2,8) },
+    { name:"Technology", score: t.includes("chip")||t.includes("ai")||t.includes("nvidia")?b*rnd(20,32):b*rnd(4,12) },
+    { name:"Cons. Disc", score: dir==="bearish"?-rnd(8,18):rnd(5,14) },
+    { name:"Healthcare", score: rnd(-6,6) },
+    { name:"Utilities",  score: dir==="bearish"?rnd(4,10):-rnd(2,8) },
+  ].sort((a,c)=>Math.abs(c.score)-Math.abs(a.score));
+
+  const frags=[];
+  if (t.includes("rate")||t.includes("fed")) frags.push(`<strong>Rate sensitivity:</strong> Central bank moves directly reprice equities via the discount rate, compressing growth stock multiples while strengthening the dollar.`);
+  if (t.includes("china")||t.includes("pmi")) frags.push(`<strong>China demand risk:</strong> Manufacturing weakness signals reduced demand for commodities and global exports, pressuring emerging market equities.`);
+  if (t.includes("oil")||t.includes("opec")) frags.push(`<strong>Energy transmission:</strong> Supply-driven oil moves raise input costs across transport and manufacturing — stagflationary pressure that complicates monetary policy.`);
+  if (t.includes("nvidia")||t.includes("ai")) frags.push(`<strong>AI capex cycle:</strong> Blowout results signal AI infrastructure build-out is accelerating — positive read-through for semiconductors and cloud providers.`);
+  if (t.includes("bank")||t.includes("svb")) frags.push(`<strong>Systemic risk:</strong> Bank stress triggers credit tightening and reduces money supply growth, disproportionately raising borrowing costs for small and mid-cap companies.`);
+  if (t.includes("iran")||t.includes("conflict")||t.includes("military")||t.includes("attack")) frags.push(`<strong>Geopolitical premium:</strong> Military escalation drives a risk-off bid into defence, energy, and gold — pressuring risk assets and airlines.`);
+  if (!frags.length) frags.push(`<strong>Macro read:</strong> This article signals a ${dir} shift in investor risk appetite. Markets will re-price based on implications for corporate earnings and liquidity over 1–3 months.`);
+  frags.push(` <strong>Timeframe:</strong> Expect the primary market reaction within <strong>1–3 trading sessions</strong>.`);
+
+  const tagList=[];
+  if (category!=="auto") tagList.push({l:category,p:true});
+  if (t.includes("fed")||t.includes("rate")) tagList.push({l:"Monetary Policy",p:!tagList.length});
+  if (t.includes("china"))                   tagList.push({l:"China Risk",p:false});
+  if (t.includes("oil")||t.includes("opec")) tagList.push({l:"Commodities",p:!tagList.length});
+  if (t.includes("earnings")||t.includes("revenue")) tagList.push({l:"Earnings",p:!tagList.length});
+  if (t.includes("inflation"))               tagList.push({l:"Inflation",p:false});
+  if (t.includes("bank"))                    tagList.push({l:"Banking",p:!tagList.length});
+  if (t.includes("ai")||t.includes("artificial intelligence")) tagList.push({l:"AI/Tech",p:false});
+  if (t.includes("iran")||t.includes("war")||t.includes("military")) tagList.push({l:"Geopolitical",p:!tagList.length});
+  tagList.push({l:dir,p:false});
+
+  return { dir, conf, tickers:tickers.slice(0,6), sectors, reasoning:frags.join(" "), tags:tagList.slice(0,7), summary: buildSummary(text, dir, category), countries: detectCountries(text), invest: buildInvestAdvice(text, dir, conf), sizing: buildPositionSizing(dir, conf) };
+}
+
+// ── COUNTRY DETECTION ─────────────────────────────────────────────────────────
+function detectCountries(text) {
+  const t = text.toLowerCase();
+  const COUNTRY_DB = [
+    { name:"United States", flag:"🇺🇸", keys:["united states","u.s.","u.s.a","federal reserve","wall street","congress","white house","washington","nasdaq","new york","s&p","treasury","fed ","powell","trump","biden"], role:"Primary" },
+    { name:"China",         flag:"🇨🇳", keys:["china","chinese","beijing","shanghai","prc","pboc","yuan","renminbi","xi jinping","alibaba","tencent","ccp"], role:"Primary" },
+    { name:"European Union",flag:"🇪🇺", keys:["european union","eurozone","ecb","euro area","brussels","european central bank"], role:"Secondary" },
+    { name:"United Kingdom",flag:"🇬🇧", keys:["united kingdom","u.k.","britain","british","bank of england","ftse","london","sterling","pound"], role:"Secondary" },
+    { name:"Japan",         flag:"🇯🇵", keys:["japan","japanese","boj","bank of japan","yen","nikkei","tokyo"], role:"Secondary" },
+    { name:"Germany",       flag:"🇩🇪", keys:["germany","german","deutsche","bundesbank","berlin","dax"], role:"Secondary" },
+    { name:"Saudi Arabia",  flag:"🇸🇦", keys:["saudi","saudi arabia","riyadh","aramco","opec","mbs"], role:"Primary" },
+    { name:"Russia",        flag:"🇷🇺", keys:["russia","russian","kremlin","moscow","ruble","putin","gazprom"], role:"Secondary" },
+    { name:"Iran",          flag:"🇮🇷", keys:["iran","iranian","tehran","irgc","khamenei"], role:"Primary" },
+    { name:"India",         flag:"🇮🇳", keys:["india","indian","rbi","mumbai","sensex","nifty","rupee","modi"], role:"Secondary" },
+    { name:"South Korea",   flag:"🇰🇷", keys:["south korea","korean","seoul","kospi","won","samsung","lg"], role:"Secondary" },
+    { name:"Taiwan",        flag:"🇹🇼", keys:["taiwan","taiwanese","tsmc","taipei"], role:"Secondary" },
+    { name:"Australia",     flag:"🇦🇺", keys:["australia","australian","rba","asx","sydney","aud"], role:"Secondary" },
+    { name:"Canada",        flag:"🇨🇦", keys:["canada","canadian","boc","tsx","toronto","loonie"], role:"Secondary" },
+    { name:"Israel",        flag:"🇮🇱", keys:["israel","israeli","tel aviv","idf","netanyahu"], role:"Secondary" },
+    { name:"Ukraine",       flag:"🇺🇦", keys:["ukraine","ukrainian","kyiv","zelensky"], role:"Secondary" },
+    { name:"Brazil",        flag:"🇧🇷", keys:["brazil","brazilian","bovespa","real","brasilia"], role:"Secondary" },
+    { name:"Singapore",     flag:"🇸🇬", keys:["singapore","mas ","straits times","sgx"], role:"Secondary" },
+  ];
+
+  const found = COUNTRY_DB.filter(c => c.keys.some(k => t.includes(k)));
+  // Deduplicate and cap at 6
+  return found.slice(0, 6);
+}
+
+// ── INVEST NOW ADVICE ─────────────────────────────────────────────────────────
+function buildInvestAdvice(text, dir, conf) {
+  const t = text.toLowerCase();
+  const isEarnings    = t.includes("earnings") || t.includes("quarterly") || t.includes("revenue");
+  const isGeopolitical= t.includes("war") || t.includes("military") || t.includes("conflict") || t.includes("attack") || t.includes("iran") || t.includes("missile");
+  const isMacro       = t.includes("rate") || t.includes("fed ") || t.includes("gdp") || t.includes("inflation") || t.includes("recession");
+  const isBankCrisis  = t.includes("bank") && (t.includes("collapse") || t.includes("run") || t.includes("crisis") || t.includes("failure"));
+
+  let rec, icon, rationale, verdict, timing, horizon, stopLoss, targetReturn;
+
+  if (isBankCrisis) {
+    rec="AVOID — Wait for Clarity"; icon="🚫"; verdict="avoid";
+    rationale="Bank contagion events create unpredictable cascading effects. Capital preservation is the priority until systemic risk is contained and regulators respond. Stay in cash or Treasuries.";
+    timing="Wait 5–10 trading days for dust to settle";
+    horizon="Re-assess in 2–3 weeks";
+    stopLoss="N/A — Avoid exposure entirely";
+    targetReturn="N/A";
+  } else if (isGeopolitical && dir === "bearish") {
+    rec="WAIT — Hedge First"; icon="⏳"; verdict="wait";
+    rationale="Geopolitical shocks create short-term volatility spikes that often overshoot. Wait for VIX to peak and initial panic selling to exhaust before entering. Consider gold or defence ETFs as a hedge.";
+    timing="Wait 2–5 days for initial shock to stabilise";
+    horizon="1–4 weeks depending on escalation";
+    stopLoss="Set stops 5–8% below entry";
+    targetReturn="8–15% on defence/energy plays";
+  } else if (dir === "bullish" && conf >= 75) {
+    rec="BUY — Strong Signal"; icon="✅"; verdict="buy";
+    rationale="High-confidence bullish signal. The news materially improves the outlook for affected securities. Consider scaling into positions immediately, with a focus on the most directly impacted tickers.";
+    timing="Enter within 1–2 trading sessions";
+    horizon="Hold 2–8 weeks for full re-rating";
+    stopLoss="Set stops 4–6% below entry";
+    targetReturn="10–25% upside on core positions";
+  } else if (dir === "bullish" && conf < 75) {
+    rec="BUY — Scale In Gradually"; icon="📈"; verdict="buy";
+    rationale="Moderate bullish signal. The positive outlook has some uncertainty. Scale into positions in 2–3 tranches rather than deploying all capital at once. Watch for confirmation in the next session.";
+    timing="Enter 50% now, 50% after confirmation";
+    horizon="Hold 3–6 weeks";
+    stopLoss="Set stops 5–7% below entry";
+    targetReturn="8–18% on core positions";
+  } else if (dir === "bearish" && conf >= 78) {
+    rec="AVOID / SHORT — Strong Signal"; icon="📉"; verdict="short";
+    rationale="High-confidence bearish signal. Consider reducing long exposure in affected sectors immediately. Experienced traders may look at puts or inverse ETFs on the most exposed names.";
+    timing="Reduce exposure in next session";
+    horizon="Pressure may persist 2–6 weeks";
+    stopLoss="Cover shorts if reversal exceeds 5%";
+    targetReturn="10–20% on short positions";
+  } else if (dir === "bearish" && conf < 78) {
+    rec="WAIT — Mixed Signals"; icon="⏳"; verdict="wait";
+    rationale="Moderate bearish signal with some uncertainty. Don't add new longs in affected sectors. Hold existing positions but tighten stop-losses. Wait for clarity before establishing short positions.";
+    timing="Reassess after 1–2 sessions";
+    horizon="Monitor over next 2–4 weeks";
+    stopLoss="Tighten existing stops by 2–3%";
+    targetReturn="Protect capital — wait for clarity";
+  } else {
+    rec="MONITOR — Neutral Signal"; icon="👁"; verdict="wait";
+    rationale="Mixed or muted market signal. This news does not warrant immediate action. Monitor for follow-on developments that may clarify direction. Keep any positions you already hold.";
+    timing="No immediate action required";
+    horizon="Review in 1–2 weeks";
+    stopLoss="Maintain existing stops";
+    targetReturn="Neutral — no directional bet";
+  }
+
+  return { rec, icon, rationale, verdict, metrics:[
+    { label:"Entry Timing", val: timing },
+    { label:"Time Horizon", val: horizon },
+    { label:"Stop-Loss",    val: stopLoss },
+    { label:"Target Return", val: targetReturn },
+  ]};
+}
+
+// ── POSITION SIZING ───────────────────────────────────────────────────────────
+function buildPositionSizing(dir, conf) {
+  // Base allocation % on confidence and direction
+  let basePct, riskLevel, riskClass, note;
+
+  if (dir === "neutral") {
+    basePct=0; riskLevel="LOW"; riskClass="risk-low";
+    note="No clear directional signal from this article. We recommend holding cash and not initiating new positions based on this news alone.";
+  } else if (conf < 60) {
+    basePct=3; riskLevel="LOW"; riskClass="risk-low";
+    note="Low-confidence signal. Limit exposure to a small exploratory position. Never risk more than you can afford to lose entirely on a single news catalyst.";
+  } else if (conf < 75) {
+    basePct=7; riskLevel="MEDIUM"; riskClass="risk-med";
+    note="Moderate signal strength. A mid-sized allocation is appropriate. Scale in across 2–3 sessions rather than deploying all at once.";
+  } else if (conf < 88) {
+    basePct=12; riskLevel="MEDIUM"; riskClass="risk-med";
+    note="Strong signal with reasonable confidence. A meaningful allocation is justified. Ensure you are diversified across at least 2–3 of the affected tickers.";
+  } else {
+    basePct=18; riskLevel="HIGH"; riskClass="risk-high";
+    note="Very high-confidence signal. A larger allocation may be warranted for experienced investors — but remember, even strong signals can fail. Use stop-losses.";
+  }
+
+  // Allocation breakdown
+  const allocations = basePct === 0 ? [
+    { label:"Cash / Money market", pct:"100%", color:"var(--text-dim)" },
+  ] : [
+    { label:"Core position (primary ticker)", pct: Math.round(basePct*0.50)+"%", color: dir==="bullish"?"var(--green)":"var(--red)" },
+    { label:"Secondary tickers (spread)", pct: Math.round(basePct*0.30)+"%", color: dir==="bullish"?"var(--green)":"var(--red)" },
+    { label:"Hedge (opposite direction)", pct: Math.round(basePct*0.10)+"%", color:"var(--yellow)" },
+    { label:"Remaining — keep as cash", pct: (100-basePct)+"%", color:"var(--text-dim)" },
+  ];
+
+  return { pct: basePct===0?"0%":basePct+"%", riskLevel, riskClass, note, allocations };
+}
+
+function buildSummary(text, dir, category) {
+  const t = text.toLowerCase();
+  const sentences = text.replace(/\n+/g," ").match(/[^.!?]+[.!?]+/g) || [];
+  const wordCount = text.trim().split(/\s+/).length;
+
+  // Pick the best headline sentence — first substantive one
+  const headline = (sentences.find(s => s.trim().length > 40 && s.trim().length < 200) || sentences[0] || "").trim();
+
+  // Generate a 2-sentence contextual summary
+  let body = "";
+  if (t.includes("federal reserve") || t.includes("rate hike") || t.includes("interest rate")) {
+    body = `The article reports on a significant central bank policy decision affecting interest rates and monetary conditions. This type of action directly influences borrowing costs, currency valuations, and equity valuations across global markets.`;
+  } else if (t.includes("china") || t.includes("pmi") || t.includes("shanghai")) {
+    body = `The article covers economic data or developments out of China, the world's second-largest economy. Chinese growth signals have significant downstream effects on commodity demand, Asian equities, and global supply chains.`;
+  } else if (t.includes("oil") || t.includes("opec") || t.includes("crude")) {
+    body = `The article covers a major development in global energy markets, specifically around oil supply and pricing. Energy price moves ripple through inflation expectations, transportation costs, and the earnings of commodity-linked companies.`;
+  } else if (t.includes("earnings") || t.includes("revenue") || t.includes("quarterly")) {
+    body = `The article covers a company earnings announcement with results relative to analyst expectations. Earnings beats or misses can trigger sharp repricing not just in the reported stock, but across the entire sector.`;
+  } else if (t.includes("bank") || t.includes("financial")) {
+    body = `The article covers a significant development in the banking or financial sector. Banking events carry systemic risk implications, as credit conditions and liquidity can tighten rapidly across the broader economy.`;
+  } else if (t.includes("iran") || t.includes("conflict") || t.includes("military") || t.includes("war")) {
+    body = `The article covers a geopolitical development involving potential or active military conflict. Geopolitical escalation typically drives a flight to safe havens — gold, Treasuries, defence stocks — while risk assets and energy-importing economies bear the pressure.`;
+  } else if (t.includes("inflation") || t.includes("cpi")) {
+    body = `The article reports on inflation data or price-level dynamics. Persistent inflation constrains central bank flexibility and compresses real returns on equities, particularly for long-duration growth stocks.`;
+  } else {
+    body = `The article covers a development with implications for investor sentiment and market positioning. The key signal is how this information changes expectations for corporate earnings, liquidity conditions, or systemic risk.`;
+  }
+
+  // Extract 3 key points from the article text
+  const keyPoints = [];
+  const candidates = sentences.filter(s => {
+    const sl = s.toLowerCase();
+    return s.trim().length > 60 &&
+      !sl.includes("click here") && !sl.includes("read more") && !sl.includes("subscribe") &&
+      (sl.includes("%") || sl.includes("billion") || sl.includes("million") || sl.includes("said") ||
+       sl.includes("rose") || sl.includes("fell") || sl.includes("surged") || sl.includes("dropped") ||
+       sl.includes("cut") || sl.includes("raised") || sl.includes("announced") || sl.includes("reported"));
+  });
+
+  for (let i = 0; i < Math.min(3, candidates.length); i++) {
+    keyPoints.push(candidates[i].trim());
+  }
+
+  // Fallback: just take the first 3 sentences if no good candidates
+  if (keyPoints.length < 2 && sentences.length >= 2) {
+    for (let i = keyPoints.length; i < Math.min(3, sentences.length); i++) {
+      if (sentences[i].trim().length > 40) keyPoints.push(sentences[i].trim());
+    }
+  }
+
+  return { headline, body, keyPoints, wordCount };
+}
+
+// ── ANALYSE FLOW ──────────────────────────────────────────────────────────────
+const STEPS = ["Extracting entities & keyphrases...","Running sentiment classification...","Mapping to affected tickers...","Generating market impact reasoning..."];
+
+async function runAnalysis() {
+  const text = document.getElementById("news-input").value.trim();
+  if (text.length < 60) {
+    const ta = document.getElementById("news-input");
+    ta.style.borderColor = "var(--red)";
+    ta.style.boxShadow   = "0 0 0 2px rgba(255,64,87,0.2)";
+    ta.placeholder = "⚠ Please add more text — paste the full article for best results";
+    setTimeout(() => { ta.style.borderColor=""; ta.style.boxShadow=""; ta.placeholder="Paste your article here..."; }, 3000);
+    return;
+  }
+
+  document.getElementById("empty-state").style.display  = "none";
+  document.getElementById("result-card").style.display  = "none";
+  const loadEl = document.getElementById("loading-state");
+  loadEl.style.display = "flex";
+  document.getElementById("analyse-btn").disabled = true;
+
+  if (window.innerWidth <= 800) {
+    setTimeout(() => document.querySelector(".analysis-panel").scrollIntoView({ behavior:"smooth" }), 120);
+  }
+
+  const stepsEl = document.getElementById("loading-steps");
+  stepsEl.innerHTML = STEPS.map((s,i)=>`<div class="loading-step" id="ls${i}"><span style="display:inline-block;width:14px">○</span>${s}</div>`).join("");
+
+  for (let i=0; i<STEPS.length; i++) {
+    await delay(380+Math.random()*250);
+    if (i>0) { const p=document.getElementById(`ls${i-1}`); p.classList.replace("active","done"); p.querySelector("span").textContent="✓"; }
+    const c=document.getElementById(`ls${i}`); c.classList.add("active"); c.querySelector("span").textContent="▶";
+  }
+  await delay(320);
+  const last=document.getElementById(`ls${STEPS.length-1}`);
+  if(last){last.classList.replace("active","done");last.querySelector("span").textContent="✓";}
+  await delay(150);
+
+  const result = analyseText(text, document.getElementById("category").value);
+  renderResult(result);
+
+  loadEl.style.display="none";
+  document.getElementById("result-card").style.display="block";
+  document.getElementById("analyse-btn").disabled=false;
+
+  if (window.innerWidth<=800) {
+    setTimeout(()=>document.getElementById("result-card").scrollIntoView({behavior:"smooth"}),80);
+  }
+}
+
+function renderResult({ dir, conf, tickers, sectors, reasoning, tags, summary, countries, invest, sizing }) {
+  // Summary
+  document.getElementById("summary-headline").textContent = summary.headline || "—";
+  document.getElementById("summary-body").textContent = summary.body;
+  document.getElementById("summary-keypoints").innerHTML = summary.keyPoints.map(kp =>
+    `<div class="keypoint"><div class="keypoint-dot"></div><span>${kp}</span></div>`
+  ).join("");
+
+  // Countries
+  const cg = document.getElementById("country-grid");
+  if (countries.length === 0) {
+    cg.innerHTML = `<span style="font-size:0.78rem;color:var(--text-dim);font-style:italic">No specific countries detected</span>`;
+  } else {
+    cg.innerHTML = countries.map(c => `
+      <div class="country-card">
+        <span class="country-flag">${c.flag}</span>
+        <div class="country-info">
+          <div class="country-name">${c.name}</div>
+          <div class="country-role">${c.role}</div>
+        </div>
+      </div>`).join("");
+  }
+
+  // Invest verdict
+  const iv = document.getElementById("invest-verdict");
+  iv.className = `invest-verdict verdict-${invest.verdict}`;
+  document.getElementById("invest-icon").textContent = invest.icon;
+  document.getElementById("invest-rec").textContent  = invest.rec;
+  document.getElementById("invest-rationale").textContent = invest.rationale;
+  const recColor = invest.verdict==="buy"?"var(--green)":invest.verdict==="short"?"var(--purple)":invest.verdict==="avoid"?"var(--red)":"var(--yellow)";
+  document.getElementById("invest-rec").style.color = recColor;
+  document.getElementById("invest-grid").innerHTML = invest.metrics.map(m=>`
+    <div class="invest-metric">
+      <div class="invest-metric-label">${m.label}</div>
+      <div class="invest-metric-val" style="color:var(--text-bright)">${m.val}</div>
+    </div>`).join("");
+
+  // Position sizing
+  document.getElementById("portfolio-pct").textContent = sizing.pct;
+  document.getElementById("portfolio-pct").style.color = sizing.riskLevel==="LOW"?"var(--green)":sizing.riskLevel==="HIGH"?"var(--red)":"var(--yellow)";
+  document.getElementById("risk-label").textContent    = sizing.riskLevel + " RISK";
+  document.getElementById("risk-label").className      = `position-risk-label ${sizing.riskClass}`;
+  document.getElementById("sizing-note").textContent   = sizing.note;
+  document.getElementById("allocation-rows").innerHTML = sizing.allocations.map(a=>`
+    <div class="allocation-row">
+      <span class="alloc-label">${a.label}</span>
+      <span class="alloc-pct" style="color:${a.color}">${a.pct}</span>
+    </div>`).join("");
+  document.getElementById("verdict-banner").className = `verdict-banner banner-${dir}`;
+  const cc = dir==="bearish"?"c-bear":dir==="bullish"?"c-bull":"c-neut";
+  document.getElementById("verdict-word").textContent = dir.toUpperCase();
+  document.getElementById("verdict-word").className = `verdict-word ${cc}`;
+  document.getElementById("verdict-arrow").textContent = dir==="bearish"?"↓":dir==="bullish"?"↑":"→";
+  document.getElementById("verdict-arrow").style.color = dir==="bearish"?"var(--red)":dir==="bullish"?"var(--green)":"var(--yellow)";
+  document.getElementById("verdict-sub").textContent = dir==="bearish"?"Likely to pressure equities lower":dir==="bullish"?"Likely to push equities higher":"Mixed signals — limited directional move";
+
+  document.getElementById("conf-pct").textContent = conf + "%";
+  const bar = document.getElementById("conf-bar");
+  bar.className = `conf-bar-fill fill-${dir}`;
+  setTimeout(()=>{ bar.style.width=conf+"%"; }, 60);
+
+  document.getElementById("ticker-grid").innerHTML = tickers.map(tk=>{
+    const up=tk.d.startsWith("+"),dn=tk.d.startsWith("-");
+    return `<div class="ticker-card"><span class="ticker-sym">${tk.s}</span><span class="ticker-move ${up?"move-up":dn?"move-down":"move-flat"}">${tk.d}</span></div>`;
+  }).join("");
+
+  document.getElementById("reasoning").innerHTML = reasoning;
+
+  const maxA = Math.max(...sectors.map(s=>Math.abs(s.score)),1);
+  document.getElementById("sectors").innerHTML = sectors.map(s=>{
+    const pct=Math.round((Math.abs(s.score)/maxA)*46);
+    const col=s.score>0?"var(--green)":s.score<0?"var(--red)":"var(--text-dim)";
+    const cls=s.score>=0?"s-pos":"s-neg";
+    return `<div class="sector-row"><span class="sector-name">${s.name}</span><div class="sector-bar-wrap"><div class="sector-center"></div><div class="sector-fill ${cls}" style="width:0%" data-w="${pct}%"></div></div><span class="sector-val" style="color:${col}">${s.score>0?"+":""}${s.score}%</span></div>`;
+  }).join("");
+  setTimeout(()=>document.querySelectorAll(".sector-fill").forEach(el=>el.style.width=el.dataset.w),80);
+
+  document.getElementById("tags").innerHTML = tags.map(tg=>`<span class="tag ${tg.p?"primary":""}">${tg.l}</span>`).join("");
+}
+
+function delay(ms) { return new Promise(r=>setTimeout(r,ms)); }
+</script>
+</body>
+</html>
