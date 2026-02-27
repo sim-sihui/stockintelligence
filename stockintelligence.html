@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>NewsIntel — Stock Intelligence</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500;600&family=Manrope:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #060810;
+            --card: #0f1420;
+            --card2: #141b2a;
+            --border: #1c2640;
+            --border2: #243050;
+            --accent: #3b82f6;
+            --accent2: #60a5fa;
+            --green: #22d3a0;
+            --red: #f43f5e;
+            --yellow: #fbbf24;
+            --text: #7a90b8;
+            --text-md: #a8bed8;
+            --text-hi: #e2eeff;
+            --mono: 'IBM Plex Mono', monospace;
+            --body: 'Manrope', sans-serif;
+            --display: 'Bebas Neue', sans-serif;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            font-family: var(--body);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background-image:
+                linear-gradient(rgba(59, 130, 246, 0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.025) 1px, transparent 1px);
+            background-size: 48px 48px;
+        }
+
+        /* ── HEADER ── */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            background: rgba(6, 8, 16, 0.95);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.25rem;
+            height: 54px;
+            gap: 0.75rem;
+        }
+
+        .logo {
+            font-family: var(--display);
+            font-size: 1.35rem;
+            letter-spacing: 0.06em;
+            color: var(--text-hi);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .logo-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 12px var(--accent);
+            animation: blink 2s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: .3
+            }
+        }
+
+        .logo-sub {
+            font-family: var(--mono);
+            font-size: 0.52rem;
+            color: var(--text);
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.4rem;
+        }
+
+        .tab {
+            font-family: var(--mono);
+            font-size: 0.63rem;
+            padding: 5px 13px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text);
+            cursor: pointer;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            transition: all 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .tab.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .tab:hover:not(.active) {
+            border-color: var(--accent2);
+            color: var(--accent2);
+        }
+
+        .hdr-right {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            white-space: nowrap;
+        }
+
+        .live-chip {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-family: var(--mono);
+            font-size: 0.58rem;
+            color: var(--green);
+            background: rgba(34, 211, 160, 0.08);
+            border: 1px solid rgba(34, 211, 160, 0.2);
+            padding: 4px 9px;
+            border-radius: 4px;
+            letter-spacing: 0.08em;
+        }
+
+        .live-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: blink 1.2s ease-in-out infinite;
+        }
+
+        .clock {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            color: var(--text);
+        }
+
+        /* ── MAIN ── */
+        main {
+            position: relative;
+            z-index: 1;
+            padding: 1.25rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* ── SUMMARY BAR ── */
+        .summary-bar {
+            display: flex;
+            gap: 0.75rem;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            margin-bottom: 1.25rem;
+            scrollbar-width: none;
+        }
+
+        .summary-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .s-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.5rem 0.9rem;
+        }
+
+        .s-name {
+            font-family: var(--mono);
+            font-size: 0.58rem;
+            color: var(--text);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .s-val {
+            font-family: var(--mono);
+            font-size: 0.76rem;
+            font-weight: 600;
+            color: var(--text-hi);
+        }
+
+        .s-chg {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+        }
+
+        .up {
+            color: var(--green);
+        }
+
+        .dn {
+            color: var(--red);
+        }
+
+        /* ── FILTERS ── */
+        .filter-row {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .fchip {
+            font-family: var(--mono);
+            font-size: 0.58rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--text);
+            cursor: pointer;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            transition: all 0.15s;
+        }
+
+        .fchip.on {
+            background: rgba(59, 130, 246, 0.12);
+            border-color: var(--accent);
+            color: var(--accent2);
+        }
+
+        .search-inp {
+            margin-left: auto;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 5px 11px;
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--text-hi);
+            outline: none;
+            width: 170px;
+            transition: border-color 0.2s;
+        }
+
+        .search-inp::placeholder {
+            color: var(--text);
+        }
+
+        .search-inp:focus {
+            border-color: var(--accent);
+        }
+
+        /* ── GRID ── */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1rem;
+        }
+
+        @media (max-width: 560px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ── CARD ── */
+        .scard {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: border-color 0.18s, transform 0.18s;
+        }
+
+        .scard:hover {
+            transform: translateY(-2px);
+            border-color: var(--border2);
+        }
+
+        .scard.c-buy {
+            border-color: rgba(34, 211, 160, 0.22);
+        }
+
+        .scard.c-wait {
+            border-color: rgba(251, 191, 36, 0.18);
+        }
+
+        .scard.c-avoid {
+            border-color: rgba(244, 63, 94, 0.18);
+        }
+
+        .stripe {
+            height: 2px;
+        }
+
+        .st-buy {
+            background: linear-gradient(90deg, #22d3a0, #34d399);
+        }
+
+        .st-wait {
+            background: linear-gradient(90deg, #fbbf24, #f59e0b);
+        }
+
+        .st-avoid {
+            background: linear-gradient(90deg, #f43f5e, #fb7185);
+        }
+
+        .card-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 0.85rem 1rem 0.4rem;
+        }
+
+        .c-sym {
+            font-family: var(--display);
+            font-size: 1.3rem;
+            letter-spacing: 0.04em;
+            color: var(--text-hi);
+            line-height: 1;
+        }
+
+        .c-exch {
+            font-family: var(--mono);
+            font-size: 0.5rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            background: var(--card2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+
+        .c-name {
+            font-size: 0.7rem;
+            color: var(--text);
+            margin: 2px 0 6px;
+        }
+
+        .sig-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-family: var(--mono);
+            font-size: 0.57rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+        }
+
+        .sb-buy {
+            background: rgba(34, 211, 160, 0.10);
+            color: var(--green);
+            border: 1px solid rgba(34, 211, 160, 0.28);
+        }
+
+        .sb-wait {
+            background: rgba(251, 191, 36, 0.09);
+            color: var(--yellow);
+            border: 1px solid rgba(251, 191, 36, 0.24);
+        }
+
+        .sb-avoid {
+            background: rgba(244, 63, 94, 0.09);
+            color: var(--red);
+            border: 1px solid rgba(244, 63, 94, 0.24);
+        }
+
+        .c-price {
+            font-family: var(--mono);
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-hi);
+            line-height: 1;
+            text-align: right;
+        }
+
+        .c-chg {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .mini-row {
+            display: flex;
+            gap: 0.9rem;
+            padding: 0 1rem 0.4rem;
+        }
+
+        .mini-item .lbl {
+            font-family: var(--mono);
+            font-size: 0.5rem;
+            color: var(--text);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+        }
+
+        .mini-item .val {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--text-hi);
+            font-weight: 600;
+        }
+
+        .chart-zone {
+            padding: 0.25rem 0.75rem 0.4rem;
+            position: relative;
+        }
+
+        .proj-hint {
+            position: absolute;
+            right: 1rem;
+            top: 0.2rem;
+            font-family: var(--mono);
+            font-size: 0.5rem;
+            color: var(--text);
+            letter-spacing: 0.04em;
+        }
+
+        .spark {
+            display: block;
+            width: 100%;
+            height: 72px;
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 0 1rem;
+        }
+
+        .inv-block {
+            padding: 0.7rem 1rem;
+        }
+
+        .inv-ttl {
+            font-family: var(--mono);
+            font-size: 0.52rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text);
+            margin-bottom: 0.35rem;
+        }
+
+        .inv-txt {
+            font-size: 0.71rem;
+            line-height: 1.52;
+            color: var(--text-md);
+            margin-bottom: 0.55rem;
+        }
+
+        .hold-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.35rem;
+        }
+
+        .hold-box {
+            background: var(--card2);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 0.4rem 0.55rem;
+        }
+
+        .hold-lbl {
+            font-family: var(--mono);
+            font-size: 0.48rem;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+
+        .hold-val {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--text-hi);
+            font-weight: 600;
+        }
+
+        /* ── MODAL ── */
+        .modal-bg {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.78);
+            z-index: 300;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .modal-bg.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal {
+            background: var(--card);
+            border: 1px solid var(--border2);
+            border-radius: 14px;
+            width: 100%;
+            max-width: 620px;
+            max-height: 92vh;
+            overflow-y: auto;
+            transform: translateY(18px);
+            transition: transform 0.22s;
+        }
+
+        .modal-bg.open .modal {
+            transform: translateY(0);
+        }
+
+        .modal::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .modal::-webkit-scrollbar-thumb {
+            background: var(--border2);
+            border-radius: 2px;
+        }
+
+        .modal-hdr {
+            padding: 1.3rem 1.4rem 0.9rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .m-sym {
+            font-family: var(--display);
+            font-size: 1.9rem;
+            color: var(--text-hi);
+            letter-spacing: 0.04em;
+            line-height: 1;
+        }
+
+        .m-name {
+            font-size: 0.77rem;
+            color: var(--text);
+            margin-top: 3px;
+        }
+
+        .m-close {
+            background: var(--card2);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.15s;
+        }
+
+        .m-close:hover {
+            color: var(--text-hi);
+            border-color: var(--text-md);
+        }
+
+        .modal-body {
+            padding: 1.1rem 1.4rem;
+        }
+
+        .m-sec {
+            margin-bottom: 1.1rem;
+        }
+
+        .m-sec-ttl {
+            font-family: var(--mono);
+            font-size: 0.55rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--text);
+            margin-bottom: 0.55rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .m-sec-ttl::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .big-chart-wrap {
+            height: 200px;
+            position: relative;
+        }
+
+        .big-chart {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .legend {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 5px;
+        }
+
+        .leg-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-family: var(--mono);
+            font-size: 0.52rem;
+            color: var(--text);
+        }
+
+        .leg-line {
+            width: 18px;
+            height: 2px;
+            background: var(--green);
+        }
+
+        .leg-dash {
+            width: 18px;
+            height: 0;
+            border-top: 2px dashed var(--yellow);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+
+        @media (max-width:480px) {
+            .metrics-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .m-metric {
+            background: var(--card2);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 0.6rem 0.75rem;
+        }
+
+        .m-metric-lbl {
+            font-family: var(--mono);
+            font-size: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            color: var(--text);
+            margin-bottom: 3px;
+        }
+
+        .m-metric-val {
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-hi);
+        }
+
+        .reasons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .reason {
+            display: flex;
+            gap: 9px;
+            font-size: 0.75rem;
+            line-height: 1.55;
+            color: var(--text-md);
+        }
+
+        .r-num {
+            font-family: var(--mono);
+            font-size: 0.57rem;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            color: var(--accent2);
+            border-radius: 3px;
+            padding: 1px 6px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .reason strong {
+            color: var(--text-hi);
+            font-weight: 600;
+        }
+
+        .risks {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .risk {
+            display: flex;
+            gap: 8px;
+            font-size: 0.73rem;
+            color: var(--text-md);
+            line-height: 1.5;
+        }
+
+        .risk-ico {
+            color: var(--yellow);
+            flex-shrink: 0;
+        }
+
+        .verdict-box {
+            border-radius: 8px;
+            padding: 0.9rem 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            margin-top: 0.4rem;
+        }
+
+        .vb-buy {
+            background: rgba(34, 211, 160, 0.07);
+            border: 1px solid rgba(34, 211, 160, 0.2);
+        }
+
+        .vb-wait {
+            background: rgba(251, 191, 36, 0.06);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+        }
+
+        .vb-avoid {
+            background: rgba(244, 63, 94, 0.06);
+            border: 1px solid rgba(244, 63, 94, 0.2);
+        }
+
+        .v-emoji {
+            font-size: 1.9rem;
+            line-height: 1;
+        }
+
+        .v-word {
+            font-family: var(--display);
+            font-size: 1.4rem;
+            letter-spacing: 0.05em;
+            margin-bottom: 2px;
+        }
+
+        .v-desc {
+            font-size: 0.73rem;
+            color: var(--text-md);
+            line-height: 1.5;
+        }
+
+        .disclaimer {
+            font-family: var(--mono);
+            font-size: 0.54rem;
+            color: var(--text);
+            background: var(--card2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.55rem 0.75rem;
+            line-height: 1.65;
+            margin-top: 0.9rem;
+            letter-spacing: 0.02em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="logo">
+            <div class="logo-dot"></div>
+            NEWSINTEL
+            <span class="logo-sub">/ Stocks</span>
+        </div>
+        <div class="tabs">
+            <button class="tab active" id="tab-US" onclick="setMarket('US')">🇺🇸 US</button>
+            <button class="tab" id="tab-SG" onclick="setMarket('SG')">🇸🇬 SG</button>
+            <button class="tab" id="tab-ALL" onclick="setMarket('ALL')">🌐 All</button>
+        </div>
+        <div class="hdr-right">
+            <div class="live-chip">
+                <div class="live-dot"></div>LIVE
+            </div>
+            <div class="clock" id="clock">--:--:--</div>
+        </div>
+    </header>
+
+    <main>
+        <div class="summary-bar" id="summary-bar"></div>
+
+        <div class="filter-row">
+            <button class="fchip on" onclick="setFilter(this,'ALL')">All</button>
+            <button class="fchip" onclick="setFilter(this,'BUY')">🟢 Buy</button>
+            <button class="fchip" onclick="setFilter(this,'WAIT')">🟡 Wait</button>
+            <button class="fchip" onclick="setFilter(this,'AVOID')">🔴 Avoid</button>
+            <button class="fchip" onclick="setFilter(this,'TECH')">Tech</button>
+            <button class="fchip" onclick="setFilter(this,'FINANCE')">Finance</button>
+            <button class="fchip" onclick="setFilter(this,'ENERGY')">Energy</button>
+            <input class="search-inp" id="search" placeholder="Search ticker / name…" oninput="renderGrid()">
+        </div>
+
+        <div class="grid" id="grid"></div>
+    </main>
+
+    <!-- MODAL -->
+    <div class="modal-bg" id="modal-bg" onclick="onBgClick(event)">
+        <div class="modal">
+            <div class="modal-hdr">
+                <div>
+                    <div class="m-sym" id="m-sym">—</div>
+                    <div class="m-name" id="m-name">—</div>
+                </div>
+                <button class="m-close" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="m-sec">
+                    <div class="m-sec-ttl">Price Chart + 30-Day Projection</div>
+                    <div class="big-chart-wrap">
+                        <canvas class="big-chart" id="big-chart"></canvas>
+                    </div>
+                    <div class="legend">
+                        <div class="leg-item">
+                            <div class="leg-line" id="leg-color"></div>Actual
+                        </div>
+                        <div class="leg-item">
+                            <div class="leg-dash"></div>Projection
+                        </div>
+                    </div>
+                </div>
+                <div class="m-sec">
+                    <div class="m-sec-ttl">Key Metrics</div>
+                    <div class="metrics-grid" id="m-metrics"></div>
+                </div>
+                <div class="m-sec">
+                    <div class="m-sec-ttl">Why Invest</div>
+                    <div class="reasons" id="m-reasons"></div>
+                </div>
+                <div class="m-sec">
+                    <div class="m-sec-ttl">Key Risks</div>
+                    <div class="risks" id="m-risks"></div>
+                </div>
+                <div class="m-sec">
+                    <div class="m-sec-ttl">Investment Verdict</div>
+                    <div class="verdict-box" id="m-vbox">
+                        <div class="v-emoji" id="m-vemoji">—</div>
+                        <div>
+                            <div class="v-word" id="m-vword">—</div>
+                            <div class="v-desc" id="m-vdesc">—</div>
+                        </div>
+                    </div>
+                    <div class="disclaimer">⚠ Not financial advice. Projections are AI-generated estimates and not
+                        guarantees. Always do your own research and consult a licensed financial advisor before
+                        investing.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ─── DATA ─────────────────────────────────────────────────────────────────────
+        var STOCKS = [
+            // US
+            {
+                id: "NVDA", name: "Nvidia Corporation", market: "US", sector: "TECH", base: 875.40, signal: "BUY", pe: 62.1, cap: "$2.15T", yld: "0.03%", beta: 1.72, w52: "$402–$974", proj: 22, holdMin: "3 months", holdIdeal: "6–12 months", entry: "Enter now — any dip under $870 is attractive",
+                reasons: ["<strong>AI chip monopoly:</strong> Nvidia controls ~80% of the AI training chip market with H100/H200 GPUs — a structural advantage no competitor has closed.", "<strong>Data center revenue tripling:</strong> Cloud hyperscalers are spending hundreds of billions on AI infrastructure, all buying Nvidia chips.", "<strong>CUDA software moat:</strong> A decade of developer lock-in makes switching costs extremely high.", "<strong>Blackwell architecture:</strong> Next-gen chips launching with 30–40% performance uplift."],
+                risks: ["Export restrictions to China could cut 25% of addressable market overnight.", "AMD MI300 gaining traction in inference — could erode share over 18–24 months.", "Valuation at 35× revenue leaves no margin for a growth miss."]
+            },
+
+            {
+                id: "AAPL", name: "Apple Inc.", market: "US", sector: "TECH", base: 189.30, signal: "WAIT", pe: 29.4, cap: "$2.92T", yld: "0.52%", beta: 1.19, w52: "$164–$199", proj: 7, holdMin: "6 months", holdIdeal: "12–24 months", entry: "Wait for a pullback to the $175–180 range before entering",
+                reasons: ["<strong>Services flywheel:</strong> App Store, Apple Music, iCloud growing 14% annually — high-margin, now 25% of total sales.", "<strong>iPhone 16 cycle:</strong> AI-native features expected to drive the strongest upgrade cycle since iPhone 12.", "<strong>India manufacturing:</strong> Supply chain diversification reduces China risk and opens 1.4B new consumers.", "<strong>Capital return machine:</strong> $110B buyback announced — one of the largest in corporate history."],
+                risks: ["DOJ antitrust lawsuit targeting App Store revenue model.", "China sales declining — 20% of revenue at risk from trade tensions.", "AI features underwhelming relative to Google and Samsung competitors."]
+            },
+
+            {
+                id: "MSFT", name: "Microsoft Corporation", market: "US", sector: "TECH", base: 415.80, signal: "BUY", pe: 36.2, cap: "$3.08T", yld: "0.72%", beta: 0.90, w52: "$310–$430", proj: 18, holdMin: "3 months", holdIdeal: "12–18 months", entry: "Strong buy at current levels — near all-time highs with momentum",
+                reasons: ["<strong>Azure AI dominance:</strong> Azure growing 29% YoY powered by OpenAI integration across every Microsoft product.", "<strong>Copilot monetisation:</strong> $30/month seats rolling out to 300M+ Office users — massive untapped revenue.", "<strong>Gaming + Activision:</strong> Xbox Game Pass now the largest gaming subscription globally.", "<strong>Defensive quality:</strong> $80B free cash flow, AAA credit, recession-resistant enterprise contracts."],
+                risks: ["OpenAI dependency — any deterioration in the partnership is a material risk.", "Azure growth deceleration from 29% could disappoint at current multiples.", "Regulatory scrutiny of cloud market dominance increasing in EU and US."]
+            },
+
+            {
+                id: "META", name: "Meta Platforms Inc.", market: "US", sector: "TECH", base: 512.60, signal: "BUY", pe: 28.1, cap: "$1.31T", yld: "0.40%", beta: 1.38, w52: "$353–$544", proj: 16, holdMin: "3 months", holdIdeal: "9–15 months", entry: "Buy now — Llama AI and ad recovery make this the best risk/reward in big tech",
+                reasons: ["<strong>Ad market recovery:</strong> Digital ad revenue growing 16% — Facebook and Instagram remain the most targeted ad platforms on earth.", "<strong>Llama open-source AI:</strong> Building the largest AI developer ecosystem outside OpenAI.", "<strong>Reels monetisation:</strong> Short-form video now matching YouTube in ad revenue per minute watched.", "<strong>Cost discipline:</strong> 'Year of Efficiency' delivering 40%+ operating margins."],
+                risks: ["EU Digital Services Act fines and FTC antitrust case ongoing.", "Teen user decline — younger demographics shifting to TikTok.", "Reality Labs still burning $5B+/year with no clear profitability path."]
+            },
+
+            {
+                id: "TSLA", name: "Tesla Inc.", market: "US", sector: "TECH", base: 248.50, signal: "WAIT", pe: 71.3, cap: "$791B", yld: "—", beta: 2.31, w52: "$138–$299", proj: 12, holdMin: "6 months", holdIdeal: "12–36 months", entry: "Wait for $220–230 support to confirm before entering",
+                reasons: ["<strong>Full Self-Driving:</strong> FSD v13 showing step-change improvements — subscription model could exceed car sales revenue.", "<strong>Energy storage:</strong> Powerwall and Megapack growing 100%+ YoY as grid-scale storage demand surges.", "<strong>Optimus robot:</strong> Humanoid robot could be worth $1–3T in a decade if targets are met.", "<strong>Supercharger network:</strong> Open to all EVs — high-margin recurring revenue stream."],
+                risks: ["Elon Musk distraction from multiple ventures and political controversies.", "China EV competition from BYD intensifying — margin compression.", "Consecutive delivery misses signal execution risk."]
+            },
+
+            {
+                id: "XOM", name: "ExxonMobil Corporation", market: "US", sector: "ENERGY", base: 116.20, signal: "BUY", pe: 13.8, cap: "$465B", yld: "3.21%", beta: 0.87, w52: "$95–$123", proj: 9, holdMin: "6 months", holdIdeal: "12–24 months", entry: "Attractive dividend yield + geopolitical tailwinds — buy now",
+                reasons: ["<strong>Geopolitical oil premium:</strong> Middle East tension keeps Brent structurally above $80, directly benefiting production economics.", "<strong>Pioneer acquisition:</strong> Adds 1.4M barrels/day in low-cost Permian production.", "<strong>Dividend aristocrat:</strong> 3.2% yield with 40 consecutive years of dividend growth.", "<strong>LNG expansion:</strong> Golden Pass LNG terminal exporting to Europe at premium prices."],
+                risks: ["Oil demand peak thesis — EV adoption accelerating faster than expected.", "OPEC+ production decisions can swing oil price ±20% rapidly.", "Energy transition regulatory pressure on permitting and lending."]
+            },
+
+            {
+                id: "JPM", name: "JPMorgan Chase & Co.", market: "US", sector: "FINANCE", base: 196.40, signal: "BUY", pe: 11.4, cap: "$566B", yld: "2.27%", beta: 1.11, w52: "$135–$200", proj: 11, holdMin: "6 months", holdIdeal: "12–24 months", entry: "Best-in-class bank at a reasonable multiple — buy on any Fed pivot signal",
+                reasons: ["<strong>Net interest income boom:</strong> Higher-for-longer rates expanding JPM lending margins to record levels.", "<strong>Investment banking recovery:</strong> M&A and IPO pipeline rebuilding — fee income poised to jump.", "<strong>Fortress balance sheet:</strong> Best capitalised major bank globally.", "<strong>Market share gains:</strong> Absorbing clients from credit-constrained regional banks after SVB collapse."],
+                risks: ["Fed rate cuts would compress net interest margins significantly.", "Commercial real estate loan exposure (~$65B) at risk in office sector.", "Regulatory capital requirements increasing under Basel III endgame rules."]
+            },
+
+            {
+                id: "AMZN", name: "Amazon.com Inc.", market: "US", sector: "TECH", base: 186.50, signal: "BUY", pe: 44.2, cap: "$1.94T", yld: "—", beta: 1.27, w52: "$118–$191", proj: 15, holdMin: "3 months", holdIdeal: "12–18 months", entry: "AWS re-acceleration + advertising make this a high-conviction buy",
+                reasons: ["<strong>AWS AI infrastructure:</strong> Amazon Bedrock and Trainium chips capturing enterprise AI cloud spend — growing 17% QoQ.", "<strong>Advertising revenue:</strong> $14B+/quarter growing 25% — now larger than YouTube.", "<strong>Retail margin expansion:</strong> Robotics driving fulfilment costs down — retail operating margin now positive.", "<strong>Project Kuiper:</strong> Satellite internet could replicate Starlink's $50B+ TAM."],
+                risks: ["AWS market share vs. Azure and Google Cloud — competition intensifying.", "FTC antitrust case targeting Prime bundling and marketplace practices.", "Consumer spending slowdown could pressure e-commerce volumes."]
+            },
+
+            // SG
+            {
+                id: "DBS", name: "DBS Group Holdings", market: "SG", sector: "FINANCE", base: 36.85, signal: "BUY", pe: 10.2, cap: "S$103B", yld: "5.82%", beta: 0.72, w52: "S$30–S$38", proj: 13, holdMin: "6 months", holdIdeal: "12–24 months", entry: "Highest-yielding STI bank — strong buy for income and growth",
+                reasons: ["<strong>Record dividends:</strong> DBS paying S$2.16/share — highest dividend in its history and likely to grow further.", "<strong>Wealth management engine:</strong> AUM growing 18% as Asian HNW clients concentrate assets in Singapore.", "<strong>ASEAN digital banking:</strong> Digibank in India and Indonesia reaching profitability.", "<strong>Rate environment advantage:</strong> Singapore rates staying elevated longer — NIM expansion continuing."],
+                risks: ["China property exposure via Mainland and HK loans (~15% of book).", "Regional competition from UOB and OCBC in key markets.", "Rate cuts by MAS would compress net interest margins."]
+            },
+
+            {
+                id: "OCBC", name: "Oversea-Chinese Banking Corp", market: "SG", sector: "FINANCE", base: 14.22, signal: "BUY", pe: 9.1, cap: "S$63B", yld: "5.10%", beta: 0.68, w52: "S$11–S$14.8", proj: 10, holdMin: "6 months", holdIdeal: "12–18 months", entry: "Undervalued vs. DBS — buy for ASEAN exposure and yield",
+                reasons: ["<strong>Great Eastern Insurance:</strong> Largest insurer in Singapore and Malaysia — diversified earnings beyond pure banking.", "<strong>Malaysia exposure:</strong> Ringgit recovery benefiting Bank of Singapore private banking unit.", "<strong>Strong capital ratios:</strong> CET1 ratio of 15.9% — supports potential special dividends.", "<strong>Wealth management growth:</strong> Bank of Singapore AUM growing 12%."],
+                risks: ["Great Eastern privatisation cost still absorbed into capital ratios.", "Indonesia digital banking returns slower than expected.", "Concentration risk in Singapore and Malaysia limits geographic diversification."]
+            },
+
+            {
+                id: "ST", name: "ST Engineering", market: "SG", sector: "TECH", base: 4.18, signal: "BUY", pe: 23.1, cap: "S$13B", yld: "3.83%", beta: 0.62, w52: "S$3.5–S$4.3", proj: 14, holdMin: "6 months", holdIdeal: "12–24 months", entry: "Defence spending supercycle — accumulate on any dips",
+                reasons: ["<strong>Defence supercycle:</strong> NATO members raising budgets to 2%+ GDP — ST Engineering defence electronics in direct demand.", "<strong>MRO dominance:</strong> Largest aircraft MRO operator in Asia-Pacific — fleet expansion driving demand.", "<strong>Smart city contracts:</strong> Rail, traffic, urban mobility across ASEAN generating recurring revenue.", "<strong>US defence exposure:</strong> Direct access to US military procurement budgets."],
+                risks: ["Government contract concentration — loss of major defence tender is material.", "MRO capacity constraints limiting throughput growth.", "Export controls could restrict defence sales to certain markets."]
+            },
+
+            {
+                id: "SIA", name: "Singapore Airlines", market: "SG", sector: "ENERGY", base: 6.72, signal: "WAIT", pe: 8.7, cap: "S$19B", yld: "3.56%", beta: 0.82, w52: "S$5.8–S$7.4", proj: 6, holdMin: "6 months", holdIdeal: "12–18 months", entry: "Hold for dividend. New entry: wait for S$6.40 on next pullback",
+                reasons: ["<strong>Premium positioning:</strong> Consistently ranked world's best airline — pricing power over budget carriers.", "<strong>Scoot growth:</strong> Low-cost subsidiary capturing ASEAN price-sensitive travel market.", "<strong>Business class demand:</strong> Asian HNW travel robust post-COVID.", "<strong>Cargo revenue:</strong> Semiconductor and pharma exports keeping air freight yields elevated."],
+                risks: ["Jet fuel costs — every $10/barrel oil move affects SIA earnings by ~$400M.", "Middle East escalation could force route cancellations over Iran airspace.", "Gulf carrier competition on lucrative long-haul routes."]
+            },
+
+            {
+                id: "SATS", name: "SATS Ltd.", market: "SG", sector: "TECH", base: 3.42, signal: "WAIT", pe: 28.4, cap: "S$3.9B", yld: "1.75%", beta: 0.95, w52: "S$2.6–S$3.8", proj: 8, holdMin: "6 months", holdIdeal: "18–24 months", entry: "Wait for WFS integration costs to clear — re-enter at S$3.10–3.20",
+                reasons: ["<strong>Airline catering recovery:</strong> Global air travel above pre-COVID levels — SATS dominant at Changi.", "<strong>Worldwide Flight Services:</strong> Now the world's largest air cargo handler — global logistics transformation.", "<strong>Changi monopoly:</strong> Entrenched position at one of the world's top 3 airports.", "<strong>Cargo growth:</strong> E-commerce driving structural increase in air freight demand."],
+                risks: ["WFS acquisition debt burden — net debt/EBITDA at 4.5× is elevated.", "Integration execution risk across 200+ airports.", "Fuel cost volatility affects airline profitability and catering contract pricing."]
+            },
+
+            {
+                id: "CICT", name: "CapitaLand Integrated CT", market: "SG", sector: "FINANCE", base: 2.08, signal: "WAIT", pe: 16.4, cap: "S$14.5B", yld: "5.40%", beta: 0.58, w52: "S$1.85–S$2.25", proj: 5, holdMin: "12 months", holdIdeal: "24–36 months", entry: "REITs pressured by higher rates — wait for rate cut cycle to begin",
+                reasons: ["<strong>Largest SG REIT:</strong> Owns 26 malls and 3 integrated developments including Raffles City.", "<strong>Shopper traffic recovery:</strong> Singapore retail spending above pre-COVID levels — tenant sales growing 4% YoY.", "<strong>Diversified income:</strong> Retail, office, and hospitality mix provides earnings stability.", "<strong>CapitaLand backing:</strong> Sponsor with $100B+ AUM provides quality asset pipeline."],
+                risks: ["Rate sensitivity — every 50bps rise compresses distribution yield spread.", "E-commerce structural headwind to physical retail long-term.", "Office vacancy rates rising in Singapore CBD."]
+            },
+
+            {
+                id: "STM", name: "Seatrium Ltd.", market: "SG", sector: "ENERGY", base: 1.52, signal: "BUY", pe: 18.3, cap: "S$12B", yld: "—", beta: 1.15, w52: "S$1.10–S$1.74", proj: 19, holdMin: "3 months", holdIdeal: "12–24 months", entry: "Offshore energy order book at record — buy ahead of earnings upgrade cycle",
+                reasons: ["<strong>Offshore energy supercycle:</strong> Oil majors returning to offshore E&P — rig and FPSO orders surging.", "<strong>Renewables pivot:</strong> Offshore wind turbine installation vessels in high demand across Europe.", "<strong>Record order book:</strong> S$24B+ in secured contracts providing 3+ years revenue visibility.", "<strong>Major NOC relationships:</strong> Long-term contracts with Petronas and Shell."],
+                risks: ["Steel and material cost inflation can compress contract margins.", "Project execution delays common in complex offshore fabrication.", "Oil price crash below $60 would freeze offshore capex budgets."]
+            },
+        ];
+
+        var INDICES = {
+            US: [{ n: "S&P 500", v: "5,248", c: "+0.81%", up: true }, { n: "NASDAQ", v: "16,441", c: "+1.14%", up: true }, { n: "DOW", v: "38,996", c: "+0.43%", up: true }, { n: "VIX", v: "14.2", c: "-5.2%", up: false }, { n: "10Y UST", v: "4.31%", c: "+3bp", up: false }, { n: "DXY", v: "104.1", c: "-0.21%", up: false }],
+            SG: [{ n: "STI", v: "3,412", c: "+0.38%", up: true }, { n: "USD/SGD", v: "1.342", c: "-0.12%", up: false }, { n: "SG 10Y", v: "3.12%", c: "+2bp", up: false }, { n: "SIBOR", v: "3.78%", c: "0.00", up: true }, { n: "Gold", v: "$2,318", c: "+0.62%", up: true }],
+            ALL: [{ n: "S&P 500", v: "5,248", c: "+0.81%", up: true }, { n: "STI", v: "3,412", c: "+0.38%", up: true }, { n: "NASDAQ", v: "16,441", c: "+1.14%", up: true }, { n: "Brent", v: "$87.2", c: "+1.4%", up: true }, { n: "Gold", v: "$2,318", c: "+0.62%", up: true }, { n: "USD/SGD", v: "1.342", c: "-0.12%", up: false }],
+        };
+
+        // ─── STATE ────────────────────────────────────────────────────────────────────
+        var market = "US";
+        var filter = "ALL";
+        var openTicker = null;
+        var prices = {};   // live prices
+        var history = {};   // sparkline price history arrays
+
+        // ─── INIT PRICE HISTORY ───────────────────────────────────────────────────────
+        STOCKS.forEach(function (s) {
+            prices[s.id] = s.base;
+            var pts = [];
+            var p = s.base * (0.94 + Math.random() * 0.06);
+            for (var i = 0; i < 32; i++) {
+                p = p * (1 + (Math.random() - 0.48) * 0.016);
+                pts.push(parseFloat(p.toFixed(4)));
+            }
+            pts[pts.length - 1] = s.base; // anchor final point
+            history[s.id] = pts;
+        });
+
+        // ─── CLOCK ────────────────────────────────────────────────────────────────────
+        setInterval(function () {
+            document.getElementById("clock").textContent =
+                new Date().toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+        }, 1000);
+
+        // ─── LIVE TICK (every 2.5s) ───────────────────────────────────────────────────
+        setInterval(function () {
+            STOCKS.forEach(function (s) {
+                var drift = (Math.random() - 0.494) * 0.0022;
+                prices[s.id] = parseFloat((prices[s.id] * (1 + drift)).toFixed(4));
+                history[s.id].push(prices[s.id]);
+                if (history[s.id].length > 55) { history[s.id].shift(); }
+
+                // Update card elements if rendered
+                var pEl = document.getElementById("p-" + s.id);
+                var cEl = document.getElementById("c-" + s.id);
+                if (pEl && cEl) {
+                    var cur = prices[s.id];
+                    var pct = ((cur - s.base) / s.base * 100).toFixed(2);
+                    var up = parseFloat(pct) >= 0;
+                    pEl.textContent = fmt(s, cur);
+                    pEl.style.color = up ? "var(--green)" : "var(--red)";
+                    cEl.textContent = (up ? "+" : "") + pct + "%";
+                    cEl.className = "c-chg " + (up ? "up" : "dn");
+                    var cv = document.getElementById("sk-" + s.id);
+                    if (cv) { drawSpark(cv, s.id, s.signal); }
+                }
+            });
+
+            // Redraw big chart if modal open
+            if (openTicker) { drawBig(openTicker); }
+        }, 2500);
+
+        function fmt(s, p) {
+            var cc = s.market === "SG" ? "S$" : "$";
+            return cc + p.toFixed(p >= 10 ? 2 : 3);
+        }
+
+        // ─── TABS ─────────────────────────────────────────────────────────────────────
+        function setMarket(m) {
+            market = m;
+            ["US", "SG", "ALL"].forEach(function (x) {
+                document.getElementById("tab-" + x).classList.toggle("active", x === m);
+            });
+            renderBar();
+            renderGrid();
+        }
+
+        function setFilter(btn, f) {
+            filter = f;
+            document.querySelectorAll(".fchip").forEach(function (c) { c.classList.remove("on"); });
+            btn.classList.add("on");
+            renderGrid();
+        }
+
+        // ─── SUMMARY BAR ─────────────────────────────────────────────────────────────
+        function renderBar() {
+            var data = INDICES[market] || INDICES.US;
+            document.getElementById("summary-bar").innerHTML = data.map(function (d) {
+                return '<div class="s-pill">' +
+                    '<span class="s-name">' + d.n + '</span>' +
+                    '<span class="s-val">' + d.v + '</span>' +
+                    '<span class="s-chg ' + (d.up ? "up" : "dn") + '">' + d.c + '</span>' +
+                    '</div>';
+            }).join("");
+        }
+
+        // ─── GRID ─────────────────────────────────────────────────────────────────────
+        function renderGrid() {
+            var q = (document.getElementById("search").value || "").toLowerCase();
+            var visible = STOCKS.filter(function (s) {
+                if (market !== "ALL" && s.market !== market) { return false; }
+                if (filter !== "ALL" && s.signal !== filter && s.sector !== filter) { return false; }
+                if (q && !s.id.toLowerCase().includes(q) && !s.name.toLowerCase().includes(q)) { return false; }
+                return true;
+            });
+
+            document.getElementById("grid").innerHTML = visible.map(function (s) {
+                return cardHTML(s);
+            }).join("");
+
+            // Draw all sparklines after paint
+            requestAnimationFrame(function () {
+                visible.forEach(function (s) {
+                    var cv = document.getElementById("sk-" + s.id);
+                    if (cv) { drawSpark(cv, s.id, s.signal); }
+                });
+            });
+        }
+
+        function cardHTML(s) {
+            var cur = prices[s.id];
+            var pct = ((cur - s.base) / s.base * 100).toFixed(2);
+            var up = parseFloat(pct) >= 0;
+            var cc = s.market === "SG" ? "S$" : "$";
+            var sigC = s.signal === "BUY" ? "sb-buy" : s.signal === "WAIT" ? "sb-wait" : "sb-avoid";
+            var stC = s.signal === "BUY" ? "st-buy" : s.signal === "WAIT" ? "st-wait" : "st-avoid";
+            var cdC = s.signal === "BUY" ? "c-buy" : s.signal === "WAIT" ? "c-wait" : "c-avoid";
+            var sigL = s.signal === "BUY" ? "✓ BUY" : s.signal === "WAIT" ? "⏳ WAIT" : "✗ AVOID";
+            var pCol = s.proj >= 0 ? "var(--green)" : "var(--red)";
+            var plain = s.reasons[0].replace(/<[^>]+>/g, "");
+
+            return '<div class="scard ' + cdC + '" onclick="openModal(\'' + s.id + '\')">' +
+                '<div class="stripe ' + stC + '"></div>' +
+                '<div class="card-head">' +
+                '<div>' +
+                '<div style="display:flex;align-items:center">' +
+                '<span class="c-sym">' + s.id + '</span>' +
+                '<span class="c-exch">' + (s.market === "SG" ? "SGX" : "US") + '</span>' +
+                '</div>' +
+                '<div class="c-name">' + s.name + '</div>' +
+                '<span class="sig-badge ' + sigC + '">' + sigL + '</span>' +
+                '</div>' +
+                '<div>' +
+                '<div class="c-price" id="p-' + s.id + '" style="color:' + (up ? "var(--green)" : "var(--red)") + '">' + fmt(s, cur) + '</div>' +
+                '<div class="c-chg ' + (up ? "up" : "dn") + '" id="c-' + s.id + '">' + (up ? "+" : "") + pct + '%</div>' +
+                '</div>' +
+                '</div>' +
+                '<div class="mini-row">' +
+                '<div class="mini-item"><div class="lbl">P/E</div><div class="val">' + s.pe + '</div></div>' +
+                '<div class="mini-item"><div class="lbl">Yield</div><div class="val">' + s.yld + '</div></div>' +
+                '<div class="mini-item"><div class="lbl">Cap</div><div class="val">' + s.cap + '</div></div>' +
+                '<div class="mini-item"><div class="lbl">30d Proj</div><div class="val" style="color:' + pCol + '">' + (s.proj > 0 ? "+" : "") + s.proj + '%</div></div>' +
+                '</div>' +
+                '<div class="chart-zone">' +
+                '<span class="proj-hint">history ↗ projection</span>' +
+                '<canvas class="spark" id="sk-' + s.id + '"></canvas>' +
+                '</div>' +
+                '<div class="divider"></div>' +
+                '<div class="inv-block">' +
+                '<div class="inv-ttl">Investment Case</div>' +
+                '<div class="inv-txt">' + plain + '</div>' +
+                '<div class="hold-row">' +
+                '<div class="hold-box"><div class="hold-lbl">Min Hold</div><div class="hold-val">' + s.holdMin + '</div></div>' +
+                '<div class="hold-box"><div class="hold-lbl">Ideal Hold</div><div class="hold-val">' + s.holdIdeal + '</div></div>' +
+                '<div class="hold-box"><div class="hold-lbl">Entry Now?</div><div class="hold-val">' + (s.signal === "BUY" ? "Yes" : "Wait") + '</div></div>' +
+                '</div>' +
+                '</div>' +
+                '</div>';
+        }
+
+        // ─── SPARKLINE ────────────────────────────────────────────────────────────────
+        function drawSpark(canvas, id, signal) {
+            var dpr = Math.min(window.devicePixelRatio || 1, 2);
+            var W = canvas.offsetWidth || 300;
+            var H = canvas.offsetHeight || 72;
+            if (W === 0 || H === 0) { return; }
+
+            canvas.width = W * dpr;
+            canvas.height = H * dpr;
+            var ctx = canvas.getContext("2d");
+            ctx.scale(dpr, dpr);
+            ctx.clearRect(0, 0, W, H);
+
+            var hist = history[id] || [];
+            if (hist.length < 2) { return; }
+
+            var stock = STOCKS.filter(function (s) { return s.id === id; })[0];
+            var projPct = stock ? stock.proj : 8;
+
+            // Split 78% history / 22% projection zone
+            var splitIdx = Math.max(2, Math.floor(hist.length * 0.78));
+            var hPts = hist.slice(0, splitIdx);
+            var lastVal = hPts[hPts.length - 1];
+            var projEnd = lastVal * (1 + projPct / 100 * 0.28);
+            var PROJ_N = 7;
+
+            // Build projection points (no noise needed for sparkline)
+            var projPts = [];
+            for (var i = 1; i <= PROJ_N; i++) {
+                projPts.push(lastVal + (projEnd - lastVal) * (i / PROJ_N));
+            }
+
+            // Compute scale AFTER building all points
+            var allVals = hPts.concat(projPts);
+            var minV = Math.min.apply(null, allVals);
+            var maxV = Math.max.apply(null, allVals);
+            var pad = (maxV - minV) * 0.1 || lastVal * 0.01;
+            var lo = minV - pad;
+            var hi = maxV + pad;
+            var total = hPts.length + PROJ_N - 1;
+
+            var toX = function (i) { return (i / Math.max(total, 1)) * W; };
+            var toY = function (v) { return H - ((v - lo) / (hi - lo)) * H * 0.88 - H * 0.06; };
+
+            var lc = signal === "BUY" ? "#22d3a0" : signal === "WAIT" ? "#fbbf24" : "#f43f5e";
+
+            // Gradient fill
+            var grad = ctx.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0, lc + "30");
+            grad.addColorStop(1, lc + "03");
+            ctx.beginPath();
+            hPts.forEach(function (v, i) {
+                if (i === 0) { ctx.moveTo(toX(i), toY(v)); } else { ctx.lineTo(toX(i), toY(v)); }
+            });
+            ctx.lineTo(toX(hPts.length - 1), H);
+            ctx.lineTo(0, H);
+            ctx.closePath();
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            // History line
+            ctx.beginPath();
+            hPts.forEach(function (v, i) {
+                if (i === 0) { ctx.moveTo(toX(i), toY(v)); } else { ctx.lineTo(toX(i), toY(v)); }
+            });
+            ctx.strokeStyle = lc;
+            ctx.lineWidth = 1.8;
+            ctx.lineJoin = "round";
+            ctx.lineCap = "round";
+            ctx.stroke();
+
+            // Projection dashed
+            ctx.beginPath();
+            ctx.moveTo(toX(hPts.length - 1), toY(lastVal));
+            projPts.forEach(function (v, i) {
+                ctx.lineTo(toX(hPts.length + i), toY(v));
+            });
+            ctx.setLineDash([3, 3]);
+            ctx.strokeStyle = "#fbbf24";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Current price dot
+            ctx.beginPath();
+            ctx.arc(toX(hPts.length - 1), toY(lastVal), 3, 0, Math.PI * 2);
+            ctx.fillStyle = lc;
+            ctx.fill();
+        }
+
+        // ─── BIG CHART ────────────────────────────────────────────────────────────────
+        function drawBig(id) {
+            var canvas = document.getElementById("big-chart");
+            if (!canvas) { return; }
+
+            var dpr = Math.min(window.devicePixelRatio || 1, 2);
+            var W = canvas.offsetWidth || 560;
+            var H = canvas.offsetHeight || 200;
+            if (W === 0 || H === 0) { return; }
+
+            canvas.width = W * dpr;
+            canvas.height = H * dpr;
+            var ctx = canvas.getContext("2d");
+            ctx.scale(dpr, dpr);
+            ctx.clearRect(0, 0, W, H);
+
+            var stock = STOCKS.filter(function (s) { return s.id === id; })[0];
+            if (!stock) { return; }
+
+            var hist = history[id] || [];
+            if (hist.length < 2) { return; }
+
+            var projPct = stock.proj;
+            var lastVal = hist[hist.length - 1];
+            var projEnd = lastVal * (1 + projPct / 100 * 0.35);
+            var PROJ_N = 15;
+
+            // First compute the scale range from history only (no noise yet)
+            var histMin = Math.min.apply(null, hist);
+            var histMax = Math.max.apply(null, hist);
+            var scaleRange = (histMax - histMin) || lastVal * 0.05;
+
+            // Build projection WITH noise (using scaleRange, which is now defined)
+            var projPts = [];
+            for (var i = 1; i <= PROJ_N; i++) {
+                var base = lastVal + (projEnd - lastVal) * (i / PROJ_N);
+                var noise = scaleRange * 0.012 * (Math.random() - 0.5);
+                projPts.push(base + noise);
+            }
+
+            // Now compute full scale including projections
+            var allVals = hist.concat(projPts);
+            var minV = Math.min.apply(null, allVals);
+            var maxV = Math.max.apply(null, allVals);
+            var pad = (maxV - minV) * 0.08 || lastVal * 0.01;
+            var lo = minV - pad;
+            var hi = maxV + pad;
+            var total = hist.length + PROJ_N - 1;
+
+            var toX = function (i) { return (i / Math.max(total, 1)) * W; };
+            var toY = function (v) { return H * 0.04 + (1 - (v - lo) / (hi - lo)) * H * 0.92; };
+
+            var lc = stock.signal === "BUY" ? "#22d3a0" : stock.signal === "WAIT" ? "#fbbf24" : "#f43f5e";
+            var cc = stock.market === "SG" ? "S$" : "$";
+
+            // Grid lines
+            ctx.strokeStyle = "rgba(255,255,255,0.04)";
+            ctx.lineWidth = 1;
+            for (var gi = 1; gi < 5; gi++) {
+                var gy = (gi / 5) * H;
+                ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+            }
+            for (var gj = 1; gj < 7; gj++) {
+                var gx = (gj / 7) * W;
+                ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+            }
+
+            // Price labels
+            ctx.fillStyle = "rgba(122,144,184,0.5)";
+            ctx.font = "10px 'IBM Plex Mono', monospace";
+            ctx.textAlign = "left";
+            for (var pi = 0; pi <= 4; pi++) {
+                var pv = lo + (hi - lo) * (pi / 4);
+                ctx.fillText(cc + pv.toFixed(pv >= 10 ? 2 : 3), 4, toY(pv) - 2);
+            }
+
+            // Gradient fill
+            var grad = ctx.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0, lc + "35");
+            grad.addColorStop(1, lc + "03");
+            ctx.beginPath();
+            hist.forEach(function (v, i) {
+                if (i === 0) { ctx.moveTo(toX(i), toY(v)); } else { ctx.lineTo(toX(i), toY(v)); }
+            });
+            ctx.lineTo(toX(hist.length - 1), H);
+            ctx.lineTo(0, H);
+            ctx.closePath();
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            // History line
+            ctx.beginPath();
+            hist.forEach(function (v, i) {
+                if (i === 0) { ctx.moveTo(toX(i), toY(v)); } else { ctx.lineTo(toX(i), toY(v)); }
+            });
+            ctx.strokeStyle = lc;
+            ctx.lineWidth = 2;
+            ctx.lineJoin = "round";
+            ctx.lineCap = "round";
+            ctx.stroke();
+
+            // Projection line
+            ctx.beginPath();
+            ctx.moveTo(toX(hist.length - 1), toY(lastVal));
+            projPts.forEach(function (v, i) {
+                ctx.lineTo(toX(hist.length + i), toY(v));
+            });
+            ctx.setLineDash([5, 4]);
+            ctx.strokeStyle = "#fbbf24";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Current price dot
+            ctx.beginPath();
+            ctx.arc(toX(hist.length - 1), toY(lastVal), 4, 0, Math.PI * 2);
+            ctx.fillStyle = lc;
+            ctx.fill();
+
+            // Projected price label
+            var finalProjV = projPts[projPts.length - 1];
+            ctx.fillStyle = "#fbbf24";
+            ctx.font = "bold 11px 'IBM Plex Mono', monospace";
+            ctx.textAlign = "right";
+            ctx.fillText(cc + projEnd.toFixed(projEnd >= 10 ? 2 : 3) + " ↗", W - 4, toY(finalProjV) - 6);
+
+            // Update legend line colour
+            var legEl = document.getElementById("leg-color");
+            if (legEl) { legEl.style.background = lc; }
+        }
+
+        // ─── MODAL ────────────────────────────────────────────────────────────────────
+        function openModal(id) {
+            var s = STOCKS.filter(function (x) { return x.id === id; })[0];
+            if (!s) { return; }
+            openTicker = id;
+
+            document.getElementById("m-sym").textContent = s.id;
+            document.getElementById("m-name").textContent = s.name + " · " + (s.market === "SG" ? "SGX" : "US Market");
+
+            var cur = prices[id];
+            var cc = s.market === "SG" ? "S$" : "$";
+            var pct = ((cur - s.base) / s.base * 100).toFixed(2);
+            var up = parseFloat(pct) >= 0;
+
+            var metrics = [
+                { l: "Live Price", v: fmt(s, cur), col: up ? "var(--green)" : "var(--red)" },
+                { l: "Day Change", v: (up ? "+" : "") + pct + "%", col: up ? "var(--green)" : "var(--red)" },
+                { l: "P/E Ratio", v: s.pe + "×" },
+                { l: "Market Cap", v: s.cap },
+                { l: "Dividend Yield", v: s.yld },
+                { l: "Beta", v: s.beta },
+                { l: "52w Range", v: s.w52 },
+                { l: "30d Projection", v: (s.proj > 0 ? "+" : "") + s.proj + "%", col: s.proj >= 0 ? "var(--green)" : "var(--red)" },
+                { l: "Ideal Hold", v: s.holdIdeal },
+            ];
+
+            document.getElementById("m-metrics").innerHTML = metrics.map(function (m) {
+                return '<div class="m-metric">' +
+                    '<div class="m-metric-lbl">' + m.l + '</div>' +
+                    '<div class="m-metric-val" style="' + (m.col ? "color:" + m.col : "") + '">' + m.v + '</div>' +
+                    '</div>';
+            }).join("");
+
+            document.getElementById("m-reasons").innerHTML = s.reasons.map(function (r, i) {
+                return '<div class="reason">' +
+                    '<span class="r-num">' + (i + 1) + '</span>' +
+                    '<span>' + r + '</span>' +
+                    '</div>';
+            }).join("");
+
+            document.getElementById("m-risks").innerHTML = s.risks.map(function (r) {
+                return '<div class="risk"><span class="risk-ico">⚠</span><span>' + r + '</span></div>';
+            }).join("");
+
+            var vbox = document.getElementById("m-vbox");
+            var vword = document.getElementById("m-vword");
+            var vdesc = document.getElementById("m-vdesc");
+            var vem = document.getElementById("m-vemoji");
+
+            if (s.signal === "BUY") {
+                vbox.className = "verdict-box vb-buy";
+                vem.textContent = "✅";
+                vword.textContent = "BUY NOW";
+                vword.style.color = "var(--green)";
+                vdesc.textContent = s.entry + ". Hold for " + s.holdIdeal + " to capture the projected +" + s.proj + "% upside.";
+            } else if (s.signal === "WAIT") {
+                vbox.className = "verdict-box vb-wait";
+                vem.textContent = "⏳";
+                vword.textContent = "WAIT";
+                vword.style.color = "var(--yellow)";
+                vdesc.textContent = s.entry + ". Once entered, minimum hold: " + s.holdMin + ", ideal: " + s.holdIdeal + ".";
+            } else {
+                vbox.className = "verdict-box vb-avoid";
+                vem.textContent = "🚫";
+                vword.textContent = "AVOID";
+                vword.style.color = "var(--red)";
+                vdesc.textContent = s.entry + ".";
+            }
+
+            document.getElementById("modal-bg").classList.add("open");
+            document.body.style.overflow = "hidden";
+
+            // Draw big chart after modal is in DOM and painted
+            requestAnimationFrame(function () {
+                setTimeout(function () { drawBig(id); }, 80);
+            });
+        }
+
+        function onBgClick(e) {
+            if (e.target === document.getElementById("modal-bg")) { closeModal(); }
+        }
+
+        function closeModal() {
+            document.getElementById("modal-bg").classList.remove("open");
+            document.body.style.overflow = "";
+            openTicker = null;
+        }
+
+        // ─── BOOT ─────────────────────────────────────────────────────────────────────
+        renderBar();
+        renderGrid();
+    </script>
+</body>
+
+</html>
